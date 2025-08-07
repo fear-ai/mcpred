@@ -8,8 +8,12 @@ import time
 from typing import Dict, List, Any, Optional
 import statistics
 
-from ..core.exceptions import SecurityTestError
-from ..core.transports import TransportFactory, SecTransport
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core.exceptions import SecurityTestError
+from core.transports import TransportFactory, SecTransport
 
 
 logger = logging.getLogger(__name__)
@@ -230,7 +234,7 @@ class StressTester:
             async with transport.connect_with_monitoring() as session:
                 session_manager = None
                 try:
-                    from ..core.session import SecSessionManager
+                    from core.session import SecSessionManager
                     session_manager = SecSessionManager(session)
                     await session_manager.initialize()
                 except Exception as e:

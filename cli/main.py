@@ -333,7 +333,7 @@ def validate(ctx, config_file):
 @click.pass_context
 def version(ctx):
     """Show version information."""
-    from .. import __version__
+    from __init__ import __version__
     click.echo(f"mcpred version {__version__}")
 
 

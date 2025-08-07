@@ -11,8 +11,12 @@ import time
 from mcp import ClientSession, types
 from mcp.shared.exceptions import McpError
 
-from ..core.exceptions import AuthTestError
-from ..core.session import SecSessionManager
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core.exceptions import AuthTestError
+from core.session import SecSessionManager
 
 
 logger = logging.getLogger(__name__)

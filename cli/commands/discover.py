@@ -9,8 +9,12 @@ from pathlib import Path
 
 import click
 
-from ...core.client import MCPTeamClient
-from ...reporting import ReportGenerator, ReportExporter
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from core.client import MCPTeamClient
+from reporting import ReportGenerator, ReportExporter
 
 
 @click.command()

@@ -9,8 +9,12 @@ from typing import Dict, List, Any, Optional
 from mcp import ClientSession, types
 from mcp.shared.exceptions import McpError
 
-from ..core.exceptions import DiscoveryError
-from ..core.session import SecSessionManager
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core.exceptions import DiscoveryError
+from core.session import SecSessionManager
 
 
 logger = logging.getLogger(__name__)

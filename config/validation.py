@@ -4,7 +4,7 @@ Configuration validation with Pydantic.
 
 import logging
 from typing import Dict, List, Any, Optional, Union
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,8 @@ class SecurityTestConfig(BaseModel):
     max_payload_size: int = Field(1024 * 1024, ge=1024, le=100 * 1024 * 1024, description="Maximum payload size for testing")
     enable_dangerous_tests: bool = Field(False, description="Enable potentially dangerous security tests")
     
-    @validator('malformed_rate')
+    @field_validator('malformed_rate')
+    @classmethod
     def validate_malformed_rate(cls, v):
         if not 0.0 <= v <= 1.0:
             raise ValueError('malformed_rate must be between 0.0 and 1.0')
@@ -51,7 +52,8 @@ class ReportingConfig(BaseModel):
     auto_open_html: bool = Field(False, description="Automatically open HTML reports")
     report_filename_template: str = Field("mcpred-report-{timestamp}", description="Report filename template")
     
-    @validator('default_format')
+    @field_validator('default_format')
+    @classmethod
     def validate_format(cls, v):
         allowed_formats = {'json', 'html', 'text', 'txt'}
         if v.lower() not in allowed_formats:
@@ -69,14 +71,16 @@ class TargetConfig(BaseModel):
     authentication: Optional[Dict[str, Any]] = Field(None, description="Authentication configuration")
     custom_headers: Optional[Dict[str, str]] = Field(None, description="Custom headers")
     
-    @validator('transport_type')
+    @field_validator('transport_type')
+    @classmethod
     def validate_transport_type(cls, v):
         allowed_transports = {'http', 'https', 'stdio', 'websocket', 'ws', 'wss', 'sse'}
         if v.lower() not in allowed_transports:
             raise ValueError(f'transport_type must be one of {allowed_transports}')
         return v.lower()
     
-    @validator('url')
+    @field_validator('url')
+    @classmethod
     def validate_url(cls, v):
         if not v or not isinstance(v, str):
             raise ValueError('url must be a non-empty string')
@@ -112,27 +116,29 @@ class MCPRedConfig(BaseModel):
     fail_fast: bool = Field(False, description="Stop testing on first critical vulnerability")
     timeout: float = Field(300.0, ge=10.0, le=3600.0, description="Overall operation timeout in seconds")
     
-    @validator('log_level')
+    @field_validator('log_level')
+    @classmethod
     def validate_log_level(cls, v):
         allowed_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
         if v.upper() not in allowed_levels:
             raise ValueError(f'log_level must be one of {allowed_levels}')
         return v.upper()
     
-    @root_validator(skip_on_failure=True)
-    def validate_targets(cls, values):
-        targets = values.get('targets', [])
-        default_target = values.get('default_target')
+    @model_validator(mode='after')
+    def validate_targets(self):
+        targets = getattr(self, 'targets', [])
+        default_target = getattr(self, 'default_target', None)
         
         if not targets and not default_target:
             logger.warning("No targets configured - will need to be provided via command line")
         
-        return values
+        return self
     
-    class Config:
-        extra = "allow"  # Allow additional configuration options
-        validate_assignment = True  # Validate on assignment
-        use_enum_values = True
+    model_config = {
+        "extra": "allow",  # Allow additional configuration options
+        "validate_assignment": True,  # Validate on assignment
+        "use_enum_values": True,
+    }
 
 
 class ConfigValidator:

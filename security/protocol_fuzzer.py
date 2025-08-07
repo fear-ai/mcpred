@@ -10,8 +10,12 @@ import string
 from typing import Dict, List, Any, Optional, Union
 import time
 
-from ..core.exceptions import ProtocolFuzzError
-from ..core.transports import SecTransport
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from core.exceptions import ProtocolFuzzError
+from core.transports import SecTransport
 
 
 logger = logging.getLogger(__name__)
