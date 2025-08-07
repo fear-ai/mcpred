@@ -1,25 +1,24 @@
-# Runtime data files (large, generated)
-change_log.json
-entity_store.json
-
-# Generated reports and outputs
-daily_report.html
-weekly_summary.html
-
 # Log files
 logs/
 *.log
 
-# Python bytecode
+# Python
+.python-version
 __pycache__/
 *.py[cod]
 *$py.class
+uv.lock
 
 # Virtual environments
 .venv/
 venv/
 ENV/
 env/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
 
 # Distribution / packaging
 dist/
@@ -34,11 +33,6 @@ htmlcov/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-
-# Environment variables
-.env
-.env.local
-.env.*.local
 
 # IDEs and editors
 .vscode/
@@ -61,7 +55,7 @@ docker-compose.override.yml
 temp/
 tmp/
 
-# Large data files (should be generated)
+# Potentially large files
 *.csv
 *.xlsx
 *.json.bak
@@ -72,22 +66,20 @@ tmp/
 bandit_results.json
 safety_results.json
 
-# Security testing artifacts
+# Testing artifacts
 *.mcpred
 reports/
 security_reports/
 vulnerability_scans/
 fuzz_outputs/
+stress_test_results/
+unit.out
+integration.out
 
 # MCP specific
 mcp_servers/
 server_configs/
 .mcp_cache/
-
-# Test artifacts
-unit.out
-integration.out
-stress_test_results/
 
 # Claude Code artifacts
 .claude/
