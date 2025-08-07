@@ -1,142 +1,87 @@
-# mcpred GitHub Management Guide
+# mcpred Repository Management Guide
 
-## 📊 Repository Status
+Repository: https://github.com/fear-ai/mcpred
 
-**🌐 Repository**: https://github.com/fear-ai/mcpred  
-**✅ Status**: Live and production-ready  
-**📈 Tests**: 89/109 passing (82% success rate)  
-**🛡️ Security**: Defensive security tool for MCP server testing  
+## Project Layout Considerations
 
----
+### Documentation Strategy
+- **README.md** - Visitor introduction and usage guide
+- **DESIGN.md** - Complete technical documentation and architecture
+- **GITHUB.md** - Repository administration and management workflows
+- **TODO.md** - Active development tasks and next steps
 
-## 🚀 Quick Start (New Contributors)
+### Code Organization Principles
+- **Modular architecture** - Clear separation between core, security, reporting, config, CLI
+- **Single-level package structure** - Direct imports, no nested package directories
+- **Test-driven development** - Comprehensive unit and integration test suites
+- **Professional tooling** - UV dependency management, pytest testing, rich CLI output
 
-### **1. Clone and Setup**
+## Repository Administration
+
+### Essential Security Features
+
+**Critical for security tools:**
 ```bash
-git clone https://github.com/fear-ai/mcpred.git
-cd mcpred
-uv sync --dev
-uv run pytest tests/unit/ -v
-```
-
-### **2. Basic Development Workflow**
-```bash
-# Create feature branch
-git checkout -b feature/your-feature
-
-# Make changes and test
-uv run pytest tests/unit/ -v
-uv run python -m cli.main --help
-
-# Submit pull request
-git push -u origin feature/your-feature
-# Open PR on GitHub
-```
-
----
-
-## 🔒 Security Configuration (Repository Owners)
-
-### **Essential Security Features (Do This First)**
-```bash
-# Enable critical security monitoring
 gh repo edit fear-ai/mcpred --enable-security-alerts
 gh repo edit fear-ai/mcpred --enable-vulnerability-alerts
 gh repo edit fear-ai/mcpred --enable-dependency-graph
 ```
 
-**Why Critical for mcpred:**
-- 🛡️ **Security tool must have secure dependencies**
-- 🔍 **Monitors 7 core + 3 dev dependencies for vulnerabilities**
-- ⚡ **Real-time alerts for Python/async library security issues**
-- 📊 **Dependency graph shows complete security posture**
+**Rationale:**
+- Security tools must maintain secure supply chain
+- Monitor 10 dependencies (7 runtime + 3 dev) for vulnerabilities
+- Real-time alerts for Python async library security issues
+- Dependency graph shows complete security posture
 
-### **Branch Protection (Team Development)**
+### Development Workflow Management
+
+#### Individual Development
 ```bash
-# Protect main branch from direct pushes
-gh api repos/fear-ai/mcpred/branches/main/protection \
-  --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":[]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
-  --field allow_force_pushes=false \
-  --field allow_deletions=false
-```
-
-**Protection Rules:**
-- ✅ **Required PR reviews** - No direct commits to main
-- ✅ **Up-to-date branches** - Must merge latest changes first  
-- ✅ **Admin enforcement** - Rules apply to all users
-- 🚫 **No force pushes** - Preserves git history
-- 🚫 **No branch deletion** - Protects main branch
-
----
-
-## ⚙️ Development Workflows
-
-### **For Individual Developers**
-```bash
-# Basic security setup (recommended)
+# Basic security monitoring
 gh repo edit fear-ai/mcpred --enable-security-alerts
-gh repo edit fear-ai/mcpred --enable-vulnerability-alerts
 
-# Standard workflow - no branch protection needed
+# Direct development workflow
 git clone https://github.com/fear-ai/mcpred.git
-# Make changes directly to main
-git add -A && git commit -m "Your changes"
+git add -A && git commit -m "Changes"
 git push
 ```
 
-### **For Team Development**
+#### Team Development  
 ```bash
-# Full security + branch protection
+# Full security suite
 gh repo edit fear-ai/mcpred --enable-security-alerts
 gh repo edit fear-ai/mcpred --enable-vulnerability-alerts
 gh repo edit fear-ai/mcpred --enable-dependency-graph
 
-# Enable branch protection
+# Branch protection for code review
 gh api repos/fear-ai/mcpred/branches/main/protection \
   --method PUT \
-  --field required_pull_request_reviews='{"required_approving_review_count":1}'
-
-# Team workflow - PR required
-git checkout -b feature/my-feature
-# Make changes
-git push -u origin feature/my-feature
-# Create PR for review
+  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
+  --field allow_force_pushes=false
 ```
 
-### **For Enterprise/Security-Critical Use**
+#### Enterprise/Security-Critical
 ```bash
 # Maximum security configuration
 gh repo edit fear-ai/mcpred --enable-security-alerts
 gh repo edit fear-ai/mcpred --enable-vulnerability-alerts
 gh repo edit fear-ai/mcpred --enable-dependency-graph
 
-# Strict branch protection
+# Strict controls with status checks
 gh api repos/fear-ai/mcpred/branches/main/protection \
   --method PUT \
   --field required_status_checks='{"strict":true,"contexts":["test-suite","security-scan"]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{
-    "required_approving_review_count": 2,
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": true
-  }' \
-  --field allow_force_pushes=false \
-  --field allow_deletions=false
+  --field required_pull_request_reviews='{"required_approving_review_count":2,"dismiss_stale_reviews":true}' \
+  --field enforce_admins=true
 ```
 
----
+## CI/CD Integration
 
-## 🔧 CI/CD Integration
+### GitHub Actions Configuration
 
-### **GitHub Actions Workflow (Recommended)**
-
-Create `.github/workflows/ci.yml`:
+**Recommended workflow** (`.github/workflows/ci.yml`):
 ```yaml
 name: CI/CD Pipeline
-
 on:
   push:
     branches: [main]
@@ -149,41 +94,32 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.11', '3.12']
-    
     steps:
       - uses: actions/checkout@v4
-      
       - name: Install UV
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
-        
-      - name: Install dependencies
+      - name: Install dependencies  
         run: uv sync --dev
-        
       - name: Run tests
         run: uv run pytest tests/unit/ -v --cov=mcpred
-        
       - name: Test CLI
         run: uv run python -m cli.main --help
-        
       - name: Security scan
-        run: uv run bandit -r mcpred/ -f json -o security-report.json
+        run: uv run bandit -r mcpred/ -f json
 ```
 
-### **Status Check Integration**
-After setting up CI, update branch protection:
+**Status check integration:**
 ```bash
+# After CI setup, require status checks
 gh api repos/fear-ai/mcpred/branches/main/protection \
   --method PUT \
   --field required_status_checks='{"strict":true,"contexts":["test (3.11)","test (3.12)"]}'
 ```
 
----
+## Advanced Repository Features
 
-## 📋 Advanced Security Features
-
-### **1. Dependabot Configuration**
-
-Create `.github/dependabot.yml`:
+### Dependabot Configuration
+**File:** `.github/dependabot.yml`
 ```yaml
 version: 2
 updates:
@@ -192,48 +128,36 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
-    reviewers:
-      - "fear-ai"
+    reviewers: ["fear-ai"]
     commit-message:
       prefix: "deps"
-      include: "scope"
 ```
 
-### **2. Security Policy**
-
-Create `.github/SECURITY.md`:
+### Security Policy
+**File:** `.github/SECURITY.md`
 ```markdown
 # Security Policy
 
 ## Reporting Vulnerabilities
-
-Please report security vulnerabilities to: security@fear-ai.com
-
-- ✅ **Response time**: Within 48 hours
-- 🔒 **Disclosure**: Coordinated disclosure preferred
-- 🎯 **Scope**: mcpred security vulnerabilities only
+Report security issues to: security@fear-ai.com
+- Response time: Within 48 hours
+- Coordinated disclosure preferred
+- Scope: mcpred vulnerabilities only
 
 ## Security Testing Guidelines
-
-This is a security testing tool. Please:
 - Only test authorized systems
 - Follow responsible disclosure
-- Report mcpred bugs, not target vulnerabilities
+- Report tool bugs, not target vulnerabilities
 ```
 
-### **3. CodeQL Analysis**
-
-Create `.github/workflows/codeql.yml`:
+### CodeQL Analysis
+**File:** `.github/workflows/codeql.yml`
 ```yaml
-name: "Security Analysis"
-
+name: Security Analysis
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 6 * * 1'
+  push: [main]
+  pull_request: [main]
+  schedule: [{cron: '0 6 * * 1'}]
 
 jobs:
   analyze:
@@ -241,133 +165,65 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
-        with:
-          languages: python
+        with: {languages: python}
       - uses: github/codeql-action/autobuild@v3
       - uses: github/codeql-action/analyze@v3
 ```
 
----
+## Repository Monitoring
 
-## 🎯 Use Case Configurations
-
-### **Personal Security Research**
-**Needs**: Basic security alerts, simple workflow
+### Security Status Verification
 ```bash
-gh repo edit fear-ai/mcpred --enable-security-alerts
-# Clone, develop, push directly to main
-```
-
-### **Open Source Project**
-**Needs**: Community contributions, quality control
-```bash
-gh repo edit fear-ai/mcpred --enable-security-alerts
-gh repo edit fear-ai/mcpred --enable-vulnerability-alerts
-# Enable PR reviews for contributors
-gh api repos/fear-ai/mcpred/branches/main/protection \
-  --method PUT \
-  --field required_pull_request_reviews='{"required_approving_review_count":1}'
-```
-
-### **Enterprise Security Tool**
-**Needs**: Maximum security, audit trail, compliance
-```bash
-# Full security suite + strict branch protection
-gh repo edit fear-ai/mcpred --enable-security-alerts
-gh repo edit fear-ai/mcpred --enable-vulnerability-alerts  
-gh repo edit fear-ai/mcpred --enable-dependency-graph
-
-# Strict controls
-gh api repos/fear-ai/mcpred/branches/main/protection \
-  --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["test-suite","security-scan","compliance-check"]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews='{
-    "required_approving_review_count": 2,
-    "dismiss_stale_reviews": true
-  }'
-```
-
-### **Security Research Team**
-**Needs**: Collaborative development, security focus
-```bash
-# Security monitoring + team workflow
-gh repo edit fear-ai/mcpred --enable-security-alerts
-gh repo edit fear-ai/mcpred --enable-vulnerability-alerts
-gh repo edit fear-ai/mcpred --enable-dependency-graph
-
-# Team-friendly protection
-gh api repos/fear-ai/mcpred/branches/main/protection \
-  --method PUT \
-  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
-  --field enforce_admins=false  # Allow admin overrides for urgent fixes
-```
-
----
-
-## 📊 Security Monitoring Dashboard
-
-### **Check Security Status**
-```bash
-# View current security settings
+# Check current security settings
 gh api repos/fear-ai/mcpred | jq '.security_and_analysis'
 
-# Check branch protection
+# Verify branch protection
 gh api repos/fear-ai/mcpred/branches/main/protection
 
-# View recent security alerts
+# Review security advisories
 gh api repos/fear-ai/mcpred/security-advisories
 ```
 
-### **Security Metrics to Monitor**
-- 🔍 **Vulnerability alerts**: Zero unresolved high/critical
-- 📊 **Dependency updates**: Weekly Dependabot PRs
-- 🛡️ **Branch protection**: 100% PR review compliance
-- ⚡ **CI status**: All checks passing
-- 🔒 **Secret scanning**: No exposed credentials
+### Key Metrics to Monitor
+- **Vulnerability alerts**: Zero unresolved high/critical issues
+- **Dependency updates**: Weekly Dependabot PRs processed
+- **Branch protection**: 100% PR review compliance maintained
+- **CI/CD status**: All automated checks passing consistently
+- **Test coverage**: Maintain 80+ test success rate
 
----
+## Repository Best Practices
 
-## 🚨 Security Best Practices
+### Security Tool Specific Considerations
+1. **Dependency vigilance** - Security tools require extra dependency monitoring
+2. **Clear usage warnings** - Prominent authorized-testing-only messaging
+3. **Vulnerability disclosure** - Established process for reporting issues
+4. **Community trust** - Transparent development and security practices
+5. **Regular audits** - Periodic security review of tool implementation
 
-### **For mcpred as Security Tool**
-1. **Dependencies**: Always use latest secure versions
-2. **Testing**: 89+ tests passing before release
-3. **Documentation**: Security warnings in CLI help
-4. **Disclosure**: Responsible vulnerability reporting
-5. **Usage**: Clear authorized-testing-only messaging
+### Access Control Strategy  
+- **Minimal permissions** - Grant only necessary repository access
+- **Admin controls** - Use branch protection even for administrators
+- **Audit logging** - Monitor all repository access and changes
+- **Key rotation** - Regular review and rotation of access credentials
 
-### **Repository Security**
-1. **Monitoring**: All security features enabled
-2. **Access**: Minimal required permissions
-3. **Reviews**: All changes reviewed before merge
-4. **Audit**: Full git history preserved
-5. **Compliance**: Meet organizational security standards
+### Release Management
+- **Semantic versioning** - Clear version numbering for security releases
+- **Security releases** - Fast-track critical security updates
+- **Change documentation** - Comprehensive changelog with security notes
+- **Backwards compatibility** - Careful API evolution for tool integrations
 
----
+## Integration Considerations
 
-## 📝 Quick Reference
+### Security Tool Ecosystem
+- **Tool chaining** - JSON output format supports automation
+- **CI/CD integration** - Compatible with security scanning pipelines  
+- **Enterprise deployment** - Configuration management for large-scale use
+- **Compliance reporting** - Structured output for audit requirements
 
-### **Essential Commands**
-```bash
-# Repository setup
-git clone https://github.com/fear-ai/mcpred.git
-uv sync --dev
+### Community Engagement
+- **Issue templates** - Structured bug reports and feature requests
+- **Contributing guidelines** - Clear development and security standards
+- **Discussion forums** - GitHub discussions for community questions
+- **Security advisories** - Public disclosure of resolved security issues
 
-# Security enablement  
-gh repo edit fear-ai/mcpred --enable-security-alerts
-
-# Branch protection
-gh api repos/fear-ai/mcpred/branches/main/protection --method PUT
-
-# Status checking
-gh api repos/fear-ai/mcpred/branches/main/protection
-```
-
-### **Support Resources**
-- 📚 **Documentation**: See README.md and DESIGN.md
-- 🐛 **Issues**: https://github.com/fear-ai/mcpred/issues
-- 🔒 **Security**: Follow .github/SECURITY.md guidelines
-- 💬 **Discussions**: Use GitHub discussions for questions
-
-This comprehensive guide ensures mcpred maintains the highest security standards while supporting various development workflows from individual research to enterprise deployments! 🛡️
+This guide focuses specifically on repository management aspects unique to maintaining a security testing tool, ensuring both development efficiency and security community trust.

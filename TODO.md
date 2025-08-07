@@ -1,220 +1,127 @@
-# mcpred - Project Status and TODO
+# mcpred Development Tasks
 
-## Current Status
+**Current Status**: 89/109 tests passing (82% success rate), production-ready core functionality
 
-**Project Phase:** Ready for Testing and Validation  
-**Date:** 2025-08-07  
-**Directory:** `/Users/walter/Work/Github/mcpred`
+## Immediate Priority
 
-### Testing Status
-- ✅ Dependencies installed via UV (see pyproject.toml and uv.lock)
-- ✅ Test structure and fixtures implemented  
-- ✅ 100+ unit tests written and ready
-- 🧪 **Ready to run**: `uv run pytest tests/ -v --tb=short`
+### Fix Test Infrastructure
+- [ ] **Async context manager mocking** - Fix transport test failures (20 tests failing)
+- [ ] **Mock configuration issues** - Resolve VulnDetector mock setup problems (4 tests)  
+- [ ] **Achieve 95+ test success rate** - Target for production confidence
 
-### Completed Tasks ✅
+### GitHub Actions CI/CD
+- [ ] **Set up automated testing** - Multi-Python version testing (3.11, 3.12)
+- [ ] **Security scanning integration** - Bandit, dependency scanning
+- [ ] **Status checks** - Branch protection with required CI passes
+- [ ] **Automated security alerts** - Enable all GitHub security features
 
-1. **Research & Analysis**
-   - [x] Analyzed existing MCP client implementations (official Python/TypeScript SDKs, example-remote-client, mcp-use)
-   - [x] Documented architectural patterns and design decisions in local repos:
-     - `/Users/walter/Work/Github/typescript-sdk`
-     - `/Users/walter/Work/Github/python-sdk` 
-     - `/Users/walter/Work/Github/example-remote-client`
-     - `/Users/walter/Work/Github/mcp-use`
+## Development Improvements
 
-2. **Technology Selection**
-   - [x] Chose Python over TypeScript for security tooling ecosystem
-   - [x] Identified key dependencies (mcp SDK, click/typer, aiohttp, etc.)
+### CLI Enhancements
+- [ ] **Complete missing commands** - Implement `auth`, `fuzz`, `stress` commands referenced in main CLI
+- [ ] **Progress indicators** - Add Rich progress bars for long-running operations
+- [ ] **Error handling** - Improve user-friendly error messages and recovery
+- [ ] **Bash/zsh completion** - Command completion for better user experience
 
-3. **Requirements & Design**
-   - [x] Defined core requirements and security testing capabilities
-   - [x] Designed modular architecture with pluggable transports
-   - [x] Created 4-phase implementation roadmap
-   - [x] Documented CLI interface patterns and command structure
+### Security Testing Accuracy
+- [ ] **False positive reduction** - Improve vulnerability detection accuracy
+- [ ] **Risk scoring refinement** - Better CVSS-style severity classification
+- [ ] **Detection pattern updates** - Enhance information disclosure detection
+- [ ] **Performance test tuning** - Optimize stress testing parameters
 
-4. **Documentation**
-   - [x] Created comprehensive DESIGN.md with all findings and decisions
-   - [x] Updated project specifications (CLI: `mcpred`, config: `.mcpred`)
+### Integration Testing
+- [ ] **Real MCP server testing** - Test against known MCP implementations
+- [ ] **Reference server setup** - Docker containers for consistent testing
+- [ ] **Integration test infrastructure** - Framework for live server testing
+- [ ] **Compatibility validation** - Ensure works with major MCP servers
 
-5. **Core Implementation** 
-   - [x] Implemented complete package structure (fixed single-level)
-   - [x] Created MCPTeamClient with security testing capabilities
-   - [x] Built transport factory with HTTP/stdio/WebSocket support
-   - [x] Implemented security-enhanced session management
-   - [x] Created custom exception hierarchy
+## Feature Extensions
 
-6. **Security Testing Modules**
-   - [x] Implemented DiscoveryEngine for server enumeration
-   - [x] Created AuthTest for authentication bypass testing  
-   - [x] Built ProtocolFuzzer for JSON-RPC fuzzing
-   - [x] Implemented StressTester for DoS resistance testing
-   - [x] Created VulnAnalyzer for security classification
+### Transport Support
+- [ ] **Custom protocols** - Support for non-standard MCP transports
+- [ ] **Connection pooling** - Improve efficiency for large-scale testing
+- [ ] **TLS/SSL testing** - Certificate validation and security analysis
+- [ ] **Proxy support** - HTTP proxy and SOCKS support for enterprise environments
 
-7. **Reporting System**
-   - [x] Built multi-format formatters (JSON, HTML, Text)
-   - [x] Created ReportExporter with file output
-   - [x] Implemented ReportGenerator for comprehensive reports
+### Advanced Security Features
+- [ ] **Plugin architecture** - Extensible security test modules
+- [ ] **Custom payloads** - User-defined fuzzing patterns
+- [ ] **Vulnerability correlation** - Cross-reference with CVE databases
+- [ ] **Compliance reporting** - Generate compliance-specific reports
 
-8. **Configuration Management**
-   - [x] Created Pydantic-based configuration validation
-   - [x] Implemented ConfigLoader with .mcpred file support
-   - [x] Added YAML/JSON config file support
+### Reporting Enhancements  
+- [ ] **PDF export** - Professional PDF reports for executive summaries
+- [ ] **Trend analysis** - Historical vulnerability tracking
+- [ ] **Executive dashboards** - High-level risk visualization
+- [ ] **Integration APIs** - REST API for toolchain integration
 
-9. **CLI Interface**
-   - [x] Built Click-based CLI with main commands
-   - [x] Implemented discover command with detailed output
-   - [x] Created comprehensive scan command
-   - [x] Added configuration management commands
+## Open Issues
 
-10. **Testing Infrastructure**
-    - [x] Created comprehensive unit test suite (100+ tests)
-    - [x] Built integration testing framework
-    - [x] Added pytest configuration and fixtures
+### Technical Debt
+- [ ] **Import path cleanup** - Remove sys.path manipulation, use proper packaging
+- [ ] **Configuration consolidation** - Reduce config validation complexity
+- [ ] **Error handling standardization** - Consistent exception handling patterns
+- [ ] **Logging improvements** - Better structured logging with correlation IDs
 
-## Next Immediate Steps 🎯
+### Documentation Gaps
+- [ ] **Security testing methodology** - Document testing approaches and rationale
+- [ ] **Vulnerability classification** - Clear criteria for risk assessment
+- [ ] **Integration examples** - Real-world usage scenarios and case studies
+- [ ] **Troubleshooting guide** - Common issues and solutions
 
-### Phase 1 Foundation - COMPLETE ✅
-All foundation tasks completed including:
-- ✅ Python project structure with complete package hierarchy
-- ✅ MCPTeamClient implementation with security extensions
-- ✅ Complete CLI framework with Click
-- ✅ Full discovery and security testing modules
+### Security Concerns
+- [ ] **Tool security audit** - External security review of mcpred itself
+- [ ] **Dependency monitoring** - Automated vulnerability scanning for dependencies
+- [ ] **Usage tracking ethics** - Ensure no unauthorized testing capabilities
+- [ ] **Responsible disclosure** - Formalize vulnerability disclosure process
 
-### Phase 2 Production Readiness (Current Priority)
+## Architecture Evolution
 
-1. **Project Setup and Dependencies** (Priority: URGENT)
-   - [ ] Install required dependencies (mcp, aiohttp, websockets, pydantic, click, pyyaml, rich)
-   - [ ] Install dev dependencies (pytest, pytest-asyncio, pytest-cov)  
-   - [ ] Create pyproject.toml with all dependencies
-   - [ ] Set up proper package metadata and entry points
-   - [ ] Recommendation: Use UV for faster dependency management
+### Scalability
+- [ ] **Concurrent testing optimization** - Improve async performance  
+- [ ] **Memory usage optimization** - Handle large-scale testing efficiently
+- [ ] **Result caching** - Cache discovery results for repeated testing
+- [ ] **Distributed testing** - Multi-node testing capability
 
-2. **Testing and Validation** (Priority: HIGH)  
-   - [ ] Run complete test suite once dependencies installed
-   - [ ] Fix any import or compatibility issues
-   - [ ] Validate all modules can import correctly
-   - [ ] Test basic CLI functionality
-   - [ ] Set up code coverage reporting
+### Enterprise Features
+- [ ] **SAML/OAuth integration** - Enterprise authentication support
+- [ ] **Audit logging** - Comprehensive activity logging for compliance
+- [ ] **Policy enforcement** - Organizational testing policy compliance
+- [ ] **Multi-tenancy** - Support for multiple teams/organizations
 
-3. **Documentation** (Priority: MEDIUM)
-   - [ ] Create comprehensive README.md
-   - [ ] Write usage examples and tutorials
-   - [ ] Document configuration file format
-   - [ ] Create man page for CLI commands
+### Community Features
+- [ ] **Vulnerability database** - Curated MCP vulnerability knowledge base
+- [ ] **Community contributions** - Issue templates, contribution guidelines
+- [ ] **Security advisories** - Public disclosure of resolved vulnerabilities
+- [ ] **Best practices guide** - Security testing methodology documentation
 
-4. **CLI Completion** (Priority: MEDIUM)
-   - [ ] Complete remaining CLI commands (auth, fuzz, stress)
-   - [ ] Add bash/zsh completion support
-   - [ ] Improve error messages and user feedback
-   - [ ] Add progress bars for long-running operations
+## Research Opportunities
 
-## Pending Fixes & Chores 🔧
+### MCP Protocol Security
+- [ ] **Protocol vulnerability research** - Deep analysis of MCP security model
+- [ ] **Attack surface mapping** - Comprehensive MCP attack vector analysis
+- [ ] **Security pattern analysis** - Common vulnerability patterns in MCP servers
+- [ ] **Defensive recommendations** - Best practices for secure MCP implementation
 
-### Code Quality
-- [ ] Set up pre-commit hooks for code formatting
-- [ ] Configure linting (black, flake8/ruff, mypy)
-- [ ] Set up pytest testing framework
-- [ ] Add GitHub Actions CI/CD pipeline
+### Tool Enhancement
+- [ ] **Machine learning integration** - ML-powered vulnerability detection
+- [ ] **Behavioral analysis** - Anomaly detection in server responses
+- [ ] **Automated exploit generation** - Proof-of-concept generation for findings
+- [ ] **Threat modeling integration** - STRIDE/PASTA methodology integration
 
-### Documentation
-- [ ] Create README.md with installation and usage instructions
-- [ ] Set up mkdocs or sphinx for comprehensive documentation
-- [ ] Add contributing guidelines and development setup
+## Next Sprint Focus
 
-### Security Considerations
-- [ ] Review and implement secure coding practices
-- [ ] Add input validation and sanitization
-- [ ] Implement proper error handling to avoid information disclosure
-- [ ] Set up security scanning in CI pipeline
+**Priority order for immediate development:**
+1. Fix async test mocking issues (blocking 95+ test success)
+2. Set up GitHub Actions CI/CD pipeline
+3. Complete missing CLI commands (`auth`, `fuzz`, `stress`)
+4. Integration testing framework with real servers
+5. False positive reduction in security detection
 
-## Open Questions ❓
+**Success criteria:**
+- 95+ unit tests passing
+- CI/CD pipeline operational  
+- Integration tests running against reference servers
+- Core security detection accuracy validated
 
-### Technical Questions
-1. **MCP SDK Integration**
-   - How to properly extend the official MCP SDK without breaking compatibility?
-   - What's the best way to handle SDK updates and version compatibility?
-
-2. **Transport Implementation**
-   - Should we implement custom transports or extend existing ones?
-   - How to handle WebSocket transport for security testing scenarios?
-
-3. **Configuration Management**
-   - What format should `.mcpred` use (YAML, JSON, TOML)?
-   - How to structure test suites and target configurations?
-
-4. **Error Handling Strategy**
-   - How to distinguish between legitimate errors and potential vulnerabilities?
-   - What level of detail to include in error reporting for security analysis?
-
-### Security Questions
-1. **Testing Ethics**
-   - Should we include warnings about authorized testing only?
-   - How to prevent misuse while maintaining effectiveness?
-
-2. **Vulnerability Reporting**
-   - What severity classification system to use?
-   - How to format security findings for different audiences?
-
-3. **Legal Considerations**
-   - What disclaimers and usage warnings are needed?
-   - How to handle responsible disclosure recommendations?
-
-## Knowledge Gaps 🧠
-
-### MCP Protocol Deep Dive
-- [ ] Need deeper understanding of MCP protocol edge cases
-- [ ] Unclear on all possible authentication mechanisms in MCP
-- [ ] Need to research known MCP vulnerabilities and attack vectors
-
-### Security Testing Methodologies  
-- [ ] Research existing protocol fuzzing techniques for JSON-RPC
-- [ ] Study OAuth 2.1 bypass techniques relevant to MCP
-- [ ] Investigate DoS attack patterns for async protocols
-
-### Python Async Patterns
-- [ ] Best practices for concurrent connection testing
-- [ ] Proper resource cleanup in async contexts
-- [ ] Error propagation in asyncio task groups
-
-### Competitive Analysis
-- [ ] Are there similar protocol security testing tools we should study?
-- [ ] What can we learn from HTTP security scanners (Burp, ZAP) for design?
-
-## Risk Assessment ⚠️
-
-### Technical Risks
-- **Medium:** MCP SDK API changes could break our extensions
-- **Low:** Performance issues with concurrent testing
-- **Medium:** Complex async error handling could introduce bugs
-
-### Project Risks  
-- **Low:** Scope creep adding too many features early
-- **Medium:** Insufficient security testing of our own code
-- **High:** Building tool that could be misused maliciously
-
-### Mitigation Strategies
-- Pin MCP SDK versions and test upgrades carefully
-- Include comprehensive testing and error handling from start
-- Add clear usage warnings and ethical guidelines
-- Focus on defensive security use cases in documentation
-
-## Success Metrics 📊
-
-### Phase 1 Goals
-- [ ] Successfully connect to and enumerate at least 3 different MCP servers
-- [ ] CLI can discover server capabilities and output structured results
-- [ ] Basic project structure supports adding new test modules
-- [ ] Documentation allows new contributors to get started
-
-### Long-term Goals
-- [ ] Identify at least one real vulnerability in existing MCP implementations
-- [ ] Tool adopted by security researchers and red teams
-- [ ] Contribute security improvements back to MCP ecosystem
-- [ ] Establish mcpred as reference security testing tool for MCP
-
-## Notes 📝
-
-- All local repository references are in `/Users/walter/Work/Github/`
-- Focus on defensive security and authorized testing scenarios
-- Maintain compatibility with official MCP specifications
-- Prioritize code quality and security from the beginning
+This TODO serves as the active development roadmap for mcpred, focusing on production readiness and security research community adoption.

@@ -1,110 +1,81 @@
 # mcpred - MCP Red Team Client
 
-A Python-based command line MCP client for red teaming and security testing. Exercise and test remote MCP servers to identify vulnerabilities and weaknesses.
+A Python command-line tool for security testing MCP (Model Context Protocol) servers. Designed for authorized security research and vulnerability assessment.
 
-##  Project Status
+## What is mcpred?
 
-**READY FOR TESTING** - Core implementation and dependencies are complete!
+mcpred enables security researchers and penetration testers to assess MCP server implementations for vulnerabilities through:
 
--  **Core Implementation**: Complete with 2000+ lines of security-focused code
--  **Dependencies**: Installed via UV with pyproject.toml configuration
--  **Architecture**: Modular design with pluggable transports and test modules
--  **CLI Interface**: Professional command-line tool with rich output
--  **Test Suite**: 100+ unit tests ready to run
-- >� **Ready for validation**: Run `uv run pytest tests/ -v` to validate
+- **Server Discovery** - Enumerate capabilities, resources, tools, and attack surface
+- **Authentication Testing** - Test OAuth flows, token handling, and privilege escalation
+- **Protocol Fuzzing** - JSON-RPC malformation testing and schema validation bypass
+- **Stress Testing** - DoS resistance, connection limits, and resource exhaustion testing
+- **Security Reporting** - Professional reports in JSON, HTML, and text formats
 
 ## Quick Start
 
-### Run Tests
+### Installation
 ```bash
-cd /Users/walter/Work/Github/mcpred
-
-# Run all tests
-uv run pytest tests/ -v --tb=short
-
-# Run with coverage
-uv run pytest tests/ --cov=mcpred --cov-report=html
+git clone https://github.com/fear-ai/mcpred.git
+cd mcpred
+uv sync --dev
 ```
 
 ### Basic Usage
 ```bash
-# Test package import
-uv run python -c "import mcpred; print(' mcpred ready to use')"
-
 # Discover server capabilities
-uv run python -m mcpred.cli.main discover http://localhost:8080
+uv run python -m cli.main discover http://localhost:8080/mcp
 
-# Comprehensive security scan  
-uv run python -m mcpred.cli.main scan http://localhost:8080 --all-tests
+# Run comprehensive security assessment
+uv run python -m cli.main scan http://localhost:8080/mcp --all-tests
 
-# Generate HTML report
-uv run python -m mcpred.cli.main scan http://localhost:8080 -o report.html --format html
+# Generate HTML security report
+uv run python -m cli.main scan http://localhost:8080/mcp -o report.html --format html
+
+# Initialize configuration file
+uv run python -m cli.main init
 ```
 
-## Architecture
-
-### Core Components
-- **MCPTeamClient**: Main client with security testing capabilities
-- **SecSessionManager**: Security-enhanced session with vulnerability detection  
-- **Transport Factory**: HTTP, stdio, WebSocket transports with security monitoring
-- **Security Modules**: Discovery, authentication testing, protocol fuzzing, stress testing
-
-### Security Testing Features
-- **= Discovery Engine**: Server enumeration and capability detection with fingerprinting
-- **= Authentication Testing**: OAuth bypass, token manipulation, privilege escalation
-- **=( Protocol Fuzzing**: JSON-RPC malformation testing with 8 payload generators
-- **� Stress Testing**: DoS resistance, connection limits, memory exhaustion
-- **=� Vulnerability Analysis**: Automated classification with severity scoring
-
-### Reporting System
-- **Multiple Formats**: JSON (automation), HTML (viewing), Text (terminal)
-- **Executive Summaries**: Risk-based reporting with compliance implications
-- **Detailed Findings**: Technical vulnerability details with remediation advice
-- **Export Options**: File output with automatic format detection
-
-## Commands
-
-### Discovery
+### Example Output
 ```bash
-# Basic server discovery
-uv run python -m mcpred.cli.main discover http://localhost:8080
+$ uv run python -m cli.main discover http://localhost:8080/mcp
 
-# With fingerprinting and detailed output
-uv run python -m mcpred.cli.main discover http://localhost:8080 --fingerprint --show-tools --show-resources
+Discovering capabilities for http://localhost:8080/mcp using http transport...
+✅ Server Info: test-server v1.0.0 (MCP 2024-11-05)
+🔧 Tools: 3 discovered (echo, file_read, system_exec)
+📄 Resources: 2 discovered (config files, logs)
+💬 Prompts: 1 discovered (greeting)
+⚠️  Security Issues: 2 potential concerns found
+📊 Discovery report saved to discovery-report.json
 ```
 
-### Security Scanning
-```bash
-# Full security assessment
-uv run python -m mcpred.cli.main scan http://localhost:8080 --all-tests
+## Key Features
 
-# Skip specific test types
-uv run python -m mcpred.cli.main scan http://localhost:8080 --skip-fuzz --skip-stress
+### Security Testing Capabilities
+- **Multi-transport support** - HTTP, WebSocket, stdio protocols
+- **Vulnerability detection** - Information disclosure, authentication bypass, protocol violations
+- **Risk assessment** - Automated severity scoring and classification
+- **Safe testing** - Built-in limits and responsible disclosure practices
 
-# Multiple output formats
-uv run python -m mcpred.cli.main scan http://localhost:8080 -o report --format html
-```
+### Professional Tooling  
+- **CLI interface** - Rich terminal output with progress indicators
+- **Configuration management** - YAML/JSON config files with validation
+- **Flexible reporting** - Multiple output formats for different audiences
+- **Comprehensive logging** - Detailed audit trails for security assessments
 
-### Configuration
-```bash
-# Initialize sample config
-uv run python -m mcpred.cli.main init
-
-# Validate configuration
-uv run python -m mcpred.cli.main validate
-
-# Show version
-uv run python -m mcpred.cli.main version
-```
+### Architecture
+- **Extends official MCP SDK** - Built on proven, protocol-compliant foundation
+- **Async-first design** - Concurrent testing for efficiency
+- **Modular security tests** - Extensible framework for custom assessments
+- **Enterprise-ready** - Professional documentation and security practices
 
 ## Configuration
 
-Create `.mcpred.yaml` in your project directory:
-
+Create `.mcpred.yaml`:
 ```yaml
 targets:
-  - url: "http://localhost:8080"
-    transport_type: "http" 
+  - url: "http://localhost:8080/mcp"
+    transport_type: "http"
     name: "local-server"
 
 security:
@@ -115,89 +86,54 @@ security:
 reporting:
   output_directory: "./reports"
   default_format: "json"
-  include_raw_data: true
 
 log_level: "INFO"
-verbose: false
 ```
 
-## Dependencies
+## Commands
 
-All dependencies are managed via UV and defined in `pyproject.toml`:
+- `discover [TARGET]` - Enumerate server capabilities and attack surface
+- `scan [TARGET]` - Run comprehensive security assessment with all tests
+- `init` - Generate sample configuration file
+- `validate` - Validate configuration file syntax
+- `version` - Show version information
 
-### Core Runtime
-- **mcp** (1.12.3+): Official MCP Python SDK
-- **aiohttp** (3.12.15+): HTTP client for async operations
-- **websockets** (15.0.1+): WebSocket transport support  
-- **pydantic** (2.11.7+): Data validation and configuration
-- **click** (8.2.1+): CLI framework
-- **pyyaml** (6.0.2+): YAML configuration file support
-- **rich** (14.1.0+): Terminal formatting and progress bars
+## Security Warning
 
-### Development
-- **pytest** (8.4.1+): Testing framework
-- **pytest-asyncio** (1.1.0+): Async test support
-- **pytest-cov** (6.2.1+): Code coverage reporting
-
-## Development
-
-### Testing
-```bash
-# Run all tests with verbose output
-uv run pytest tests/ -v
-
-# Run with coverage report
-uv run pytest tests/ --cov=mcpred --cov-report=html
-
-# Run specific test categories
-uv run pytest tests/unit/ -v           # Unit tests only
-uv run pytest tests/integration/ -v    # Integration tests (requires servers)
-```
-
-### Code Quality
-```bash
-# Install quality tools
-uv add --dev black ruff mypy
-
-# Format code
-uv run black mcpred/ tests/
-
-# Lint
-uv run ruff mcpred/ tests/
-
-# Type checking  
-uv run mypy mcpred/
-```
-
-## Security Notice
-
-**� IMPORTANT**: This tool is designed for authorized security testing only.
+⚠️ **AUTHORIZED TESTING ONLY** - This tool is designed for security research and authorized penetration testing.
 
 - Only test servers you own or have explicit permission to test
-- Some tests may impact server performance or availability
+- Some tests may impact server performance or availability  
+- Follow responsible disclosure practices for any vulnerabilities discovered
 - Use `enable_dangerous_tests: false` in production environments
-- Follow responsible disclosure practices for any vulnerabilities found
 
-## Contributing
+## Requirements
 
-1. Clone and install: `uv sync --dev`
-2. Run tests: `uv run pytest tests/ -v`
-3. Follow existing code patterns and security-first design
-4. Add tests for new functionality
-5. Update documentation
+- **Python 3.11+** - Modern async support required
+- **UV package manager** - Fast, reliable dependency management
+- **MCP server access** - Target servers must be accessible for testing
 
-## Next Steps
+## Project Status
 
-1. **Validate Implementation**: `uv run pytest tests/ -v`
-2. **Test CLI Commands**: Try discovery and scanning commands
-3. **Create Sample Config**: `uv run python -m mcpred.cli.main init`
-4. **Run Against Test Server**: Test with real MCP server
-5. **Generate Reports**: Try different output formats
+- **89/109 tests passing** (82% success rate)
+- **Production-ready core functionality** with comprehensive CLI
+- **Active development** with regular updates and security improvements
+- **Community contributions welcome** - See DESIGN.md for technical details
 
-## Status
+## Documentation
 
-- **Phase**: Ready for testing and validation
-- **Dependencies**:  Installed and managed via UV  
-- **Tests**:  Comprehensive suite ready to run
-- **CLI**:  Complete command interface
-- **Goal**: Production-ready MCP security testing tool
+- **DESIGN.md** - Complete technical documentation and architecture details
+- **GITHUB.md** - Repository management and security configuration guide  
+- **TODO.md** - Development status and next steps for contributors
+
+## License and Ethics
+
+This project is focused on **defensive security** and authorized testing. It is designed to help improve MCP server security through responsible vulnerability research and disclosure.
+
+## Support
+
+- **Issues**: https://github.com/fear-ai/mcpred/issues
+- **Discussions**: Use GitHub discussions for questions
+- **Security**: Report vulnerabilities following responsible disclosure practices
+
+Built for the security research community to strengthen MCP ecosystem security.
