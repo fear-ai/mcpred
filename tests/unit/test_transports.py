@@ -111,16 +111,23 @@ class TestHTTPSecTransport:
         with patch('mcpred.core.transports.sse.sse_client') as mock_sse:
             with patch('aiohttp.ClientSession') as mock_session_class:
                 with patch('aiohttp.TCPConnector') as mock_connector_class:
-                    # Mock the sse client
+                    # Mock the sse client as async function
                     mock_read = AsyncMock()
                     mock_write = AsyncMock()
-                    mock_sse.return_value = (mock_read, mock_write)
+                    
+                    # Make sse_client async and return tuple
+                    async def mock_sse_client(target, session):
+                        return (mock_read, mock_write)
+                    mock_sse.side_effect = mock_sse_client
                     
                     # Mock aiohttp components
-                    mock_connector = MagicMock()
+                    mock_connector = AsyncMock()
+                    mock_connector.close = AsyncMock()
                     mock_connector_class.return_value = mock_connector
                     
-                    mock_session = MagicMock()
+                    # Create async context manager mock for ClientSession
+                    mock_session = AsyncMock()
+                    mock_session.close = AsyncMock()
                     mock_session_class.return_value = mock_session
                     
                     async with transport.connect_with_monitoring() as session:
@@ -155,10 +162,17 @@ class TestHTTPSecTransport:
         mock_response = AsyncMock()
         mock_response.status = 400
         mock_response.headers = {"Content-Type": "application/json"}
-        mock_response.text.return_value = '{"error": "Bad Request"}'
+        mock_response.text = AsyncMock(return_value='{"error": "Bad Request"}')
         
         mock_session = AsyncMock()
-        mock_session.post.return_value.__aenter__.return_value = mock_response
+        # Create async context manager mock for post method
+        class AsyncContextManagerMock:
+            async def __aenter__(self):
+                return mock_response
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        mock_session.post = MagicMock(return_value=AsyncContextManagerMock())
         
         transport.client_session = mock_session
         
@@ -257,10 +271,14 @@ class TestStdioSecTransport:
                 mock_process.stdout = AsyncMock()
                 mock_subprocess.return_value = mock_process
                 
-                # Mock stdio client
+                # Mock stdio client as async function
                 mock_read = AsyncMock()
                 mock_write = AsyncMock()
-                mock_stdio.return_value = (mock_read, mock_write)
+                
+                # Make stdio_client async and return tuple
+                async def mock_stdio_client(stdin, stdout):
+                    return (mock_read, mock_write)
+                mock_stdio.side_effect = mock_stdio_client
                 
                 async with transport.connect_with_monitoring() as session:
                     assert transport.connected
@@ -381,17 +399,23 @@ class TestStdioSecTransport:
         """Test stdio disconnect with force kill."""
         transport = StdioSecTransport("python server.py")
         
-        # Mock process that doesn't terminate gracefully
+        # Mock process that doesn't terminate gracefully, then succeeds after kill
         mock_process = AsyncMock()
-        mock_process.wait.side_effect = asyncio.TimeoutError()
+        # First wait() call times out, second wait() call (after kill) succeeds
+        mock_process.wait.side_effect = [asyncio.TimeoutError(), None]
+        mock_process.terminate = MagicMock()  # Non-async method
+        mock_process.kill = MagicMock()       # Non-async method
+        
         transport.process = mock_process
         transport._connected = True
         
         await transport.disconnect()
         
-        # Should call kill after terminate timeout
+        # Should call terminate first, then kill after timeout
         mock_process.terminate.assert_called_once()
         mock_process.kill.assert_called_once()
+        # wait() should be called twice: once for terminate timeout, once after kill
+        assert mock_process.wait.call_count == 2
     
     def test_command_parsing(self):
         """Test command and args parsing."""
@@ -425,13 +449,18 @@ class TestWSSecTransport:
         
         with patch('mcpred.core.transports.websocket.websocket_client') as mock_ws:
             with patch('aiohttp.ClientSession') as mock_session_class:
-                # Mock websocket client
+                # Mock websocket client as async function
                 mock_read = AsyncMock()
                 mock_write = AsyncMock()
-                mock_ws.return_value = (mock_read, mock_write)
                 
-                # Mock aiohttp session
-                mock_session = MagicMock()
+                # Make websocket_client async and return tuple
+                async def mock_ws_client(target, session):
+                    return (mock_read, mock_write)
+                mock_ws.side_effect = mock_ws_client
+                
+                # Mock aiohttp session with async cleanup
+                mock_session = AsyncMock()
+                mock_session.close = AsyncMock()
                 mock_session_class.return_value = mock_session
                 
                 async with transport.connect_with_monitoring() as session:
@@ -469,7 +498,14 @@ class TestWSSecTransport:
         mock_ws.receive.return_value = mock_msg
         
         mock_session = AsyncMock()
-        mock_session.ws_connect.return_value.__aenter__.return_value = mock_ws
+        # Create async context manager mock for ws_connect method
+        class WSAsyncContextManagerMock:
+            async def __aenter__(self):
+                return mock_ws
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        mock_session.ws_connect = MagicMock(return_value=WSAsyncContextManagerMock())
         
         transport.ws_session = mock_session
         
@@ -492,7 +528,14 @@ class TestWSSecTransport:
         mock_ws.receive.side_effect = asyncio.TimeoutError()
         
         mock_session = AsyncMock()
-        mock_session.ws_connect.return_value.__aenter__.return_value = mock_ws
+        # Create async context manager mock for ws_connect method
+        class WSTimeoutAsyncContextManagerMock:
+            async def __aenter__(self):
+                return mock_ws
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+        
+        mock_session.ws_connect = MagicMock(return_value=WSTimeoutAsyncContextManagerMock())
         
         transport.ws_session = mock_session
         

@@ -115,11 +115,13 @@ def mock_transport(mock_client_session) -> AsyncMock:
     transport.connected = True
     
     # Mock context manager for connection
-    async def mock_connect():
-        yield mock_client_session
+    class MockAsyncContextManager:
+        async def __aenter__(self):
+            return mock_client_session
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            return None
     
-    transport.connect_with_monitoring.return_value.__aenter__ = AsyncMock(return_value=mock_client_session)
-    transport.connect_with_monitoring.return_value.__aexit__ = AsyncMock(return_value=None)
+    transport.connect_with_monitoring = MagicMock(return_value=MockAsyncContextManager())
     
     # Mock malformed request injection
     transport.inject_malformed_request.return_value = {

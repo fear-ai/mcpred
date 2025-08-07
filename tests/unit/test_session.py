@@ -6,11 +6,16 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 import time
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from mcp import types
+from mcp.types import ErrorData
 from mcp.shared.exceptions import McpError
 
-from mcpred.core.session import SecSessionManager, RequestLogger, VulnDetector
-from mcpred.core.exceptions import SecurityAnalyzedError
+from core.session import SecSessionManager, RequestLogger, VulnDetector
+from core.exceptions import SecurityAnalyzedError
 
 
 class TestRequestLogger:
@@ -69,8 +74,15 @@ class TestVulnDetector:
         detector = VulnDetector()
         
         # Response with sensitive information
-        response_with_secrets = MagicMock()
-        response_with_secrets.__dict__ = {"password": "secret123", "config": "internal"}
+        class MockResponse:
+            def __init__(self):
+                self.password = "secret123"
+                self.config = "internal"
+            
+            def __str__(self):
+                return "Response(password=secret123, config=internal)"
+        
+        response_with_secrets = MockResponse()
         
         vulnerabilities = await detector.analyze_response(response_with_secrets)
         
@@ -108,7 +120,8 @@ class TestVulnDetector:
         """Test detecting path disclosure in errors."""
         detector = VulnDetector()
         
-        error = McpError("File not found: /internal/config/secret.json")
+        error_data = ErrorData(code=-1, message="File not found: /internal/config/secret.json")
+        error = McpError(error_data)
         
         analysis = await detector.analyze_error(error)
         
@@ -122,7 +135,8 @@ class TestVulnDetector:
         """Test detecting database information in errors."""
         detector = VulnDetector()
         
-        error = McpError("Database connection failed: mysql://user:pass@localhost/db")
+        error_data = ErrorData(code=-1, message="Database connection failed: mysql://user:pass@localhost/db")
+        error = McpError(error_data)
         
         analysis = await detector.analyze_error(error)
         
@@ -135,7 +149,8 @@ class TestVulnDetector:
         """Test detecting internal system information in errors."""
         detector = VulnDetector()
         
-        error = McpError("Internal server error: stack trace follows...")
+        error_data = ErrorData(code=-1, message="Internal server error: stack trace follows...")
+        error = McpError(error_data)
         
         analysis = await detector.analyze_error(error)
         
@@ -187,7 +202,7 @@ class TestSecSessionManager:
     @pytest.mark.asyncio
     async def test_initialize_error(self, mock_client_session):
         """Test initialization with error."""
-        mock_client_session.initialize.side_effect = McpError("Init failed")
+        mock_client_session.initialize.side_effect = McpError(ErrorData(code=-1, message="Init failed"))
         
         manager = SecSessionManager(mock_client_session)
         
@@ -312,7 +327,7 @@ class TestSecSessionManager:
     @pytest.mark.asyncio
     async def test_monitored_request_error(self, mock_client_session):
         """Test monitored request with error."""
-        mock_client_session.send_request.side_effect = McpError("Request failed")
+        mock_client_session.send_request.side_effect = McpError(ErrorData(code=-1, message="Request failed"))
         
         manager = SecSessionManager(mock_client_session)
         
@@ -320,7 +335,8 @@ class TestSecSessionManager:
             await manager.monitored_request("test/method", {})
         
         assert isinstance(exc_info.value.original_error, McpError)
-        assert "security_analysis" in exc_info.value.details
+        assert "error_type" in exc_info.value.details
+        assert exc_info.value.details["error_type"] == "McpError"
     
     def test_get_security_summary(self, sec_session_manager):
         """Test getting security summary."""
@@ -356,9 +372,9 @@ class TestSecSessionManager:
     async def test_error_handling_in_operations(self, mock_client_session):
         """Test error handling in various operations."""
         # Test different operations that might fail
-        mock_client_session.list_tools.side_effect = McpError("Tools error")
-        mock_client_session.list_resources.side_effect = McpError("Resources error")
-        mock_client_session.call_tool.side_effect = McpError("Tool error")
+        mock_client_session.list_tools.side_effect = McpError(ErrorData(code=-1, message="Tools error"))
+        mock_client_session.list_resources.side_effect = McpError(ErrorData(code=-1, message="Resources error"))
+        mock_client_session.call_tool.side_effect = McpError(ErrorData(code=-1, message="Tool error"))
         
         manager = SecSessionManager(mock_client_session)
         

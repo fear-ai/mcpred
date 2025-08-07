@@ -224,7 +224,7 @@ class WSSecTransport(SecTransport):
             # Configure WebSocket session
             timeout = aiohttp.ClientTimeout(
                 total=self.security_config.get("total_timeout", 30),
-                ws_connect=self.security_config.get("ws_connect_timeout", 10),
+                sock_connect=self.security_config.get("ws_connect_timeout", 10),
             )
             
             connector_kwargs = {}

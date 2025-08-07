@@ -5,8 +5,12 @@ Unit tests for MCPTeamClient.
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from mcpred.core.client import MCPTeamClient, SecurityConfig, ServerCapabilities, SecurityIssue, ProtocolViolation, PerformanceMetrics
-from mcpred.core.exceptions import SecurityTestError
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from core.client import MCPTeamClient, SecurityConfig, ServerCapabilities, SecurityIssue, ProtocolViolation, PerformanceMetrics
+from core.exceptions import SecurityTestError
 
 
 class TestSecurityConfig:
