@@ -1,0 +1,93 @@
+# Runtime data files (large, generated)
+change_log.json
+entity_store.json
+
+# Generated reports and outputs
+daily_report.html
+weekly_summary.html
+
+# Log files
+logs/
+*.log
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Testing and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Large data files (should be generated)
+*.csv
+*.xlsx
+*.json.bak
+
+# Development artifacts
+.mypy_cache/
+.bandit
+bandit_results.json
+safety_results.json
+
+# Security testing artifacts
+*.mcpred
+reports/
+security_reports/
+vulnerability_scans/
+fuzz_outputs/
+
+# MCP specific
+mcp_servers/
+server_configs/
+.mcp_cache/
+
+# Test artifacts
+unit.out
+integration.out
+stress_test_results/
+
+# Claude Code artifacts
+.claude/
