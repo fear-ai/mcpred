@@ -255,7 +255,7 @@ class TestMCPTeamClient:
                 
                 max_conn = await mcp_team_client._test_connection_limits()
                 
-                # Should test incrementally up to max_concurrent_connections
+                # Should test incrementally up to max_connections
                 assert max_conn >= 0
     
     @pytest.mark.asyncio 
@@ -299,11 +299,11 @@ class TestMCPTeamClient:
         config = SecurityConfig(
             max_fuzz_requests=20,
             malformed_rate=0.7,
-            max_concurrent_connections=10
+            max_connections=10
         )
         
         client = MCPTeamClient("http://test:8080", security_config=config)
         
         assert client.security_config.max_fuzz_requests == 20
         assert client.security_config.malformed_rate == 0.7
-        assert client.security_config.max_concurrent_connections == 10
+        assert client.security_config.max_connections == 10

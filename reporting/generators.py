@@ -132,7 +132,7 @@ class ReportGenerator:
     def generate_findings_report(
         self,
         vulnerabilities: List[Any],
-        include_raw_data: bool = False
+        include_raw: bool = False
     ) -> Dict[str, Any]:
         """Generate detailed findings report."""
         logger.info("Generating detailed findings report")
@@ -170,7 +170,7 @@ class ReportGenerator:
                 "vulnerabilities": findings_data
             }
             
-            if include_raw_data:
+            if include_raw:
                 report["raw_data"] = {
                     "original_vulnerabilities": vulnerabilities
                 }

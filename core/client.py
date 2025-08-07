@@ -33,8 +33,8 @@ class SecurityConfig:
         self.malformed_rate = kwargs.get("malformed_rate", 0.3)
         
         # Stress testing settings
-        self.max_concurrent_connections = kwargs.get("max_concurrent_connections", 50)
-        self.stress_test_duration = kwargs.get("stress_test_duration", 60)
+        self.max_connections = kwargs.get("max_connections", 50)
+        self.stress_duration = kwargs.get("stress_duration", 60)
         
         # Discovery settings
         self.discovery_timeout = kwargs.get("discovery_timeout", 10)
@@ -144,7 +144,12 @@ class MCPTeamClient:
     ):
         self.target = target_url
         self.transport_type = transport_type
-        self.security_config = security_config or SecurityConfig()
+        
+        # Handle security_config as dict or SecurityConfig object
+        if isinstance(security_config, dict):
+            self.security_config = SecurityConfig(**security_config)
+        else:
+            self.security_config = security_config or SecurityConfig()
         
         # Core components - will be initialized on demand
         self.transport: Optional[SecTransport] = None
@@ -387,7 +392,7 @@ class MCPTeamClient:
         
         try:
             # Gradually increase connection count until server refuses
-            for conn_count in range(1, self.security_config.max_concurrent_connections + 1):
+            for conn_count in range(1, self.security_config.max_connections + 1):
                 try:
                     # Create multiple concurrent connections
                     transports = [

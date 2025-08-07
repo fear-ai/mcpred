@@ -50,7 +50,7 @@ class ConfigLoader:
     def save_config(self, config: MCPRedConfig, output_path: str) -> None:
         """Save configuration to file."""
         try:
-            config_dict = config.dict()
+            config_dict = config.model_dump()
             
             # Determine format from file extension
             path_obj = Path(output_path)
@@ -77,8 +77,8 @@ class ConfigLoader:
         sample_config = {
             "targets": [
                 {
-                    "url": "http://localhost:8080",
-                    "transport_type": "http",
+                    "url": "https://localhost:8080",
+                    "transport_type": "https",
                     "name": "local-server",
                     "description": "Local development server"
                 }
@@ -92,15 +92,15 @@ class ConfigLoader:
             "security": {
                 "max_fuzz_requests": 100,
                 "malformed_rate": 0.3,
-                "max_concurrent_connections": 50,
-                "stress_test_duration": 60,
-                "enable_dangerous_tests": False
+                "max_connections": 50,
+                "stress_duration": 60,
+                "enable_dangerous": False
             },
             "reporting": {
-                "output_directory": "./reports",
-                "default_format": "json",
-                "include_raw_data": True,
-                "auto_open_html": False
+                "output_dir": "./reports",
+                "default_fmt": "text",
+                "include_raw": True,
+                "auto_open": False
             },
             "log_level": "INFO",
             "verbose": False,

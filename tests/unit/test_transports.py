@@ -115,10 +115,13 @@ class TestHTTPSecTransport:
                     mock_read = AsyncMock()
                     mock_write = AsyncMock()
                     
-                    # Make sse_client async and return tuple
-                    async def mock_sse_client(target, session):
-                        return (mock_read, mock_write)
-                    mock_sse.side_effect = mock_sse_client
+                    # Mock sse_client as async context manager (returns async generator)
+                    class MockAsyncContextManager:
+                        async def __aenter__(self):
+                            return (mock_read, mock_write)
+                        async def __aexit__(self, exc_type, exc_val, exc_tb):
+                            return None
+                    mock_sse.return_value = MockAsyncContextManager()
                     
                     # Mock aiohttp components
                     mock_connector = AsyncMock()
@@ -135,8 +138,8 @@ class TestHTTPSecTransport:
                         assert transport.connector == mock_connector
                         assert transport.client_session == mock_session
                         
-                        # Verify sse_client was called with correct params
-                        mock_sse.assert_called_once_with("http://test:8080", mock_session)
+                        # Verify sse_client was called with correct params (URL only)
+                        mock_sse.assert_called_once_with("http://test:8080")
     
     @pytest.mark.asyncio
     async def test_connect_with_monitoring_error(self):
@@ -263,33 +266,25 @@ class TestStdioSecTransport:
         """Test successful stdio connection."""
         transport = StdioSecTransport("python server.py")
         
-        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
-            with patch('mcpred.core.transports.stdio.stdio_client') as mock_stdio:
-                # Mock subprocess
-                mock_process = AsyncMock()
-                mock_process.stdin = AsyncMock()
-                mock_process.stdout = AsyncMock()
-                mock_subprocess.return_value = mock_process
-                
+        with patch('mcpred.core.transports.stdio.stdio_client') as mock_stdio:
+            with patch('mcp.client.stdio.StdioServerParameters') as mock_params:
                 # Mock stdio client as async function
                 mock_read = AsyncMock()
                 mock_write = AsyncMock()
                 
                 # Make stdio_client async and return tuple
-                async def mock_stdio_client(stdin, stdout):
+                async def mock_stdio_client(server_params):
                     return (mock_read, mock_write)
                 mock_stdio.side_effect = mock_stdio_client
                 
                 async with transport.connect_with_monitoring() as session:
                     assert transport.connected
-                    assert transport.process == mock_process
                     
-                    # Verify subprocess was created with correct command
-                    mock_subprocess.assert_called_once_with(
-                        "python", "server.py",
-                        stdin=asyncio.subprocess.PIPE,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
+                    # Verify stdio_client was called with server parameters
+                    mock_stdio.assert_called_once()
+                    mock_params.assert_called_once_with(
+                        command="python",
+                        args=["server.py"]
                     )
     
     @pytest.mark.asyncio
@@ -308,8 +303,8 @@ class TestStdioSecTransport:
         """Test stdio connection subprocess error."""
         transport = StdioSecTransport("invalid_command")
         
-        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
-            mock_subprocess.side_effect = Exception("Process creation failed")
+        with patch('mcpred.core.transports.stdio.stdio_client') as mock_stdio:
+            mock_stdio.side_effect = Exception("Process creation failed")
             
             with pytest.raises(TransportError) as exc_info:
                 async with transport.connect_with_monitoring():
@@ -399,12 +394,10 @@ class TestStdioSecTransport:
         """Test stdio disconnect with force kill."""
         transport = StdioSecTransport("python server.py")
         
-        # Mock process that doesn't terminate gracefully, then succeeds after kill
+        # Mock process that doesn't terminate gracefully
         mock_process = AsyncMock()
         # First wait() call times out, second wait() call (after kill) succeeds
         mock_process.wait.side_effect = [asyncio.TimeoutError(), None]
-        mock_process.terminate = MagicMock()  # Non-async method
-        mock_process.kill = MagicMock()       # Non-async method
         
         transport.process = mock_process
         transport._connected = True
@@ -449,14 +442,16 @@ class TestWSSecTransport:
         
         with patch('mcpred.core.transports.websocket.websocket_client') as mock_ws:
             with patch('aiohttp.ClientSession') as mock_session_class:
-                # Mock websocket client as async function
+                # Mock websocket client as async context manager
                 mock_read = AsyncMock()
                 mock_write = AsyncMock()
                 
-                # Make websocket_client async and return tuple
-                async def mock_ws_client(target, session):
-                    return (mock_read, mock_write)
-                mock_ws.side_effect = mock_ws_client
+                class MockWebSocketAsyncContextManager:
+                    async def __aenter__(self):
+                        return (mock_read, mock_write)
+                    async def __aexit__(self, exc_type, exc_val, exc_tb):
+                        return None
+                mock_ws.return_value = MockWebSocketAsyncContextManager()
                 
                 # Mock aiohttp session with async cleanup
                 mock_session = AsyncMock()
@@ -467,8 +462,8 @@ class TestWSSecTransport:
                     assert transport.connected
                     assert transport.ws_session == mock_session
                     
-                    # Verify websocket_client was called
-                    mock_ws.assert_called_once_with("ws://test:8080", mock_session)
+                    # Verify websocket_client was called with URL only
+                    mock_ws.assert_called_once_with("ws://test:8080")
     
     @pytest.mark.asyncio
     async def test_connect_with_monitoring_error(self):

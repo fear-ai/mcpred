@@ -50,7 +50,7 @@ class PerformanceMetrics:
     
     def __init__(self):
         self.connection_limit = 0
-        self.max_concurrent_connections = 0
+        self.max_connections = 0
         self.average_response_time = 0.0
         self.median_response_time = 0.0
         self.p95_response_time = 0.0
@@ -81,7 +81,7 @@ class PerformanceMetrics:
         """Convert to dictionary."""
         return {
             "connection_limit": self.connection_limit,
-            "max_concurrent_connections": self.max_concurrent_connections,
+            "max_connections": self.max_connections,
             "average_response_time": self.average_response_time,
             "median_response_time": self.median_response_time,
             "p95_response_time": self.p95_response_time,
@@ -108,7 +108,7 @@ class StressTester:
         """Test maximum concurrent connections."""
         logger.info("Testing connection limits")
         
-        max_connections = self.security_config.get("max_concurrent_connections", 100)
+        max_connections = self.security_config.get("max_connections", 100)
         connection_timeout = self.security_config.get("connect_timeout", 5)
         
         metrics = {
@@ -174,7 +174,7 @@ class StressTester:
             metrics["successful_connections"] = successful_connections
             metrics["final_connection_limit"] = successful_connections
             self.performance_metrics.connection_limit = successful_connections
-            self.performance_metrics.max_concurrent_connections = successful_connections
+            self.performance_metrics.max_connections = successful_connections
             
             # Clean up connections
             for transport, session in transports:
@@ -211,7 +211,7 @@ class StressTester:
         """Test server resource exhaustion resistance."""
         logger.info("Testing resource exhaustion resistance")
         
-        test_duration = self.security_config.get("stress_test_duration", 30)  # 30 seconds
+        test_duration = self.security_config.get("stress_duration", 30)  # 30 seconds
         request_rate = self.security_config.get("request_rate", 10)  # requests per second
         
         metrics = {

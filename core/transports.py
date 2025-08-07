@@ -30,7 +30,7 @@ class SecTransport(ABC):
         return self._connected
     
     @abstractmethod
-    async def connect_with_monitoring(self) -> AsyncContextManager[ClientSession]:
+    async def connect_with_monitoring(self):
         """Connect with security monitoring capabilities."""
     
     @abstractmethod
@@ -51,7 +51,7 @@ class HTTPSecTransport(SecTransport):
         self.client_session: Optional[aiohttp.ClientSession] = None
     
     @asynccontextmanager
-    async def connect_with_monitoring(self) -> AsyncContextManager[ClientSession]:
+    async def connect_with_monitoring(self):
         """Create HTTP connection with request/response monitoring."""
         try:
             # Configure connector with security testing options
@@ -78,14 +78,13 @@ class HTTPSecTransport(SecTransport):
                 timeout=timeout
             )
             
-            # Create MCP session over HTTP
-            read, write = await sse.sse_client(self.target, self.client_session)
-            
-            mcp_session = ClientSession(read, write)
-            self._session = mcp_session
-            self._connected = True
-            
-            yield mcp_session
+            # Create MCP session over HTTP using SSE
+            async with sse.sse_client(self.target) as (read, write):
+                mcp_session = ClientSession(read, write)
+                self._session = mcp_session
+                self._connected = True
+                
+                yield mcp_session
             
         except Exception as e:
             raise TransportError("http", f"Failed to connect: {str(e)}", e)
@@ -136,7 +135,7 @@ class StdioSecTransport(SecTransport):
         self.process: Optional[asyncio.subprocess.Process] = None
     
     @asynccontextmanager
-    async def connect_with_monitoring(self) -> AsyncContextManager[ClientSession]:
+    async def connect_with_monitoring(self):
         """Create stdio connection with process monitoring."""
         try:
             # Parse command and args from target
@@ -148,16 +147,15 @@ class StdioSecTransport(SecTransport):
             command = parts[0]
             args = parts[1:] if len(parts) > 1 else []
             
-            # Create subprocess with security monitoring
-            self.process = await asyncio.create_subprocess_exec(
-                command,
-                *args,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+            # Create server parameters for stdio client
+            from mcp.client.stdio import StdioServerParameters
+            server_params = StdioServerParameters(
+                command=command,
+                args=args if args else []
             )
             
-            read, write = await stdio.stdio_client(self.process.stdin, self.process.stdout)
+            # Create MCP session using stdio client
+            read, write = await stdio.stdio_client(server_params)
             
             mcp_session = ClientSession(read, write)
             self._session = mcp_session
@@ -218,7 +216,7 @@ class WSSecTransport(SecTransport):
         self.ws_session: Optional[aiohttp.ClientSession] = None
     
     @asynccontextmanager
-    async def connect_with_monitoring(self) -> AsyncContextManager[ClientSession]:
+    async def connect_with_monitoring(self):
         """Create WebSocket connection with monitoring."""
         try:
             # Configure WebSocket session
@@ -237,13 +235,12 @@ class WSSecTransport(SecTransport):
                 timeout=timeout
             )
             
-            read, write = await websocket.websocket_client(self.target, self.ws_session)
-            
-            mcp_session = ClientSession(read, write)
-            self._session = mcp_session
-            self._connected = True
-            
-            yield mcp_session
+            async with websocket.websocket_client(self.target) as (read, write):
+                mcp_session = ClientSession(read, write)
+                self._session = mcp_session
+                self._connected = True
+                
+                yield mcp_session
             
         except Exception as e:
             raise TransportError("websocket", f"Failed to connect: {str(e)}", e)

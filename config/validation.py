@@ -29,11 +29,11 @@ class SecurityTestConfig(BaseModel):
     
     max_fuzz_requests: int = Field(100, ge=1, le=10000, description="Maximum fuzzing requests")
     malformed_rate: float = Field(0.3, ge=0.0, le=1.0, description="Rate of malformed requests in fuzzing")
-    max_concurrent_connections: int = Field(50, ge=1, le=500, description="Maximum concurrent test connections")
-    stress_test_duration: int = Field(60, ge=10, le=600, description="Stress test duration in seconds")
+    max_connections: int = Field(50, ge=1, le=500, description="Maximum concurrent test connections")
+    stress_duration: int = Field(60, ge=10, le=600, description="Stress test duration in seconds")
     request_rate: int = Field(10, ge=1, le=1000, description="Requests per second for stress testing")
-    max_payload_size: int = Field(1024 * 1024, ge=1024, le=100 * 1024 * 1024, description="Maximum payload size for testing")
-    enable_dangerous_tests: bool = Field(False, description="Enable potentially dangerous security tests")
+    max_payload: int = Field(1024 * 1024, ge=1024, le=100 * 1024 * 1024, description="Maximum payload size for testing")
+    enable_dangerous: bool = Field(False, description="Enable potentially dangerous security tests")
     
     @field_validator('malformed_rate')
     @classmethod
@@ -46,18 +46,18 @@ class SecurityTestConfig(BaseModel):
 class ReportingConfig(BaseModel):
     """Reporting configuration."""
     
-    output_directory: str = Field("./reports", description="Directory for report output")
-    default_format: str = Field("json", description="Default report format")
-    include_raw_data: bool = Field(True, description="Include raw data in reports")
-    auto_open_html: bool = Field(False, description="Automatically open HTML reports")
-    report_filename_template: str = Field("mcpred-report-{timestamp}", description="Report filename template")
+    output_dir: str = Field("./reports", description="Directory for report output")
+    default_fmt: str = Field("text", description="Default report format")
+    include_raw: bool = Field(True, description="Include raw data in reports")
+    auto_open: bool = Field(False, description="Automatically open HTML reports")
+    filename_template: str = Field("mcpred-report-{timestamp}", description="Report filename template")
     
-    @field_validator('default_format')
+    @field_validator('default_fmt')
     @classmethod
     def validate_format(cls, v):
         allowed_formats = {'json', 'html', 'text', 'txt'}
         if v.lower() not in allowed_formats:
-            raise ValueError(f'default_format must be one of {allowed_formats}')
+            raise ValueError(f'default_fmt must be one of {allowed_formats}')
         return v.lower()
 
 
@@ -65,7 +65,7 @@ class TargetConfig(BaseModel):
     """Target server configuration."""
     
     url: str = Field(..., description="Target server URL")
-    transport_type: str = Field("http", description="Transport type")
+    transport_type: str = Field("https", description="Transport type")  
     name: Optional[str] = Field(None, description="Target name for identification")
     description: Optional[str] = Field(None, description="Target description")
     authentication: Optional[Dict[str, Any]] = Field(None, description="Authentication configuration")
@@ -253,15 +253,15 @@ CONFIG_SCHEMA = {
             "properties": {
                 "max_fuzz_requests": {"type": "integer", "minimum": 1, "maximum": 10000},
                 "malformed_rate": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-                "enable_dangerous_tests": {"type": "boolean"}
+                "enable_dangerous": {"type": "boolean"}
             }
         },
         "reporting": {
             "type": "object",
             "properties": {
-                "output_directory": {"type": "string"},
-                "default_format": {"type": "string", "enum": ["json", "html", "text", "txt"]},
-                "include_raw_data": {"type": "boolean"}
+                "output_dir": {"type": "string"},
+                "default_fmt": {"type": "string", "enum": ["json", "html", "text", "txt"]},
+                "include_raw": {"type": "boolean"}
             }
         }
     }

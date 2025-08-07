@@ -43,14 +43,35 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None):
 
 
 @click.group()
-@click.option('--config', '-c', type=click.Path(exists=True), help='Configuration file path')
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.option('--log-level', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), 
+@click.option('--config', '--conf', '-c', type=click.Path(exists=True), help='Configuration file path')
+@click.option('--verbose', '--verb', '-v', is_flag=True, help='Enable verbose output')
+@click.option('--log-level', '--loglev', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), 
               default='INFO', help='Set logging level')
-@click.option('--log-file', type=click.Path(), help='Log file path')
+@click.option('--log-file', '--logfile', type=click.Path(), help='Log file path')
+@click.option('--version', is_flag=True, help='Show version information')
 @click.pass_context
-def cli(ctx, config, verbose, log_level, log_file):
-    """mcpred - MCP Red Team Client for security testing MCP servers."""
+def cli(ctx, config, verbose, log_level, log_file, version):
+    """mcpred - MCP Red Team Client for security testing MCP servers.
+    
+    Quick usage:
+      mcpred sc https://api.example.com/mcp        # Full scan
+      mcpred dis https://api.example.com/mcp       # Discovery only  
+      mcpred conf                                  # Create sample config
+      mcpred bigtest.red                           # Run test definition
+      mcpred --version                             # Show version
+      
+    All commands have short aliases (sc, dis).
+    Most options have short forms (--tran, --fmt, --conf, etc).
+    """
+    
+    # Handle version flag
+    if version:
+        try:
+            from __init__ import __version__
+            click.echo(f"mcpred version {__version__}")
+        except ImportError:
+            click.echo("mcpred version unknown")
+        sys.exit(0)
     
     # Set up logging
     if verbose:
@@ -84,17 +105,22 @@ def cli(ctx, config, verbose, log_level, log_file):
         sys.exit(1)
 
 
-@cli.command()
+@cli.command('discover')
 @click.argument('target', required=False)
-@click.option('--transport', '-t', type=click.Choice(['http', 'https', 'stdio', 'websocket', 'ws', 'wss']), 
-              default='http', help='Transport type')
+@click.option('--transport', '--tran', '-t', type=click.Choice(['http', 'https', 'stdio', 'websocket', 'ws', 'wss']), 
+              default='https', help='Transport type')
 @click.option('--output', '-o', type=click.Path(), help='Output file path')
-@click.option('--format', 'output_format', type=click.Choice(['json', 'html', 'text']), 
-              default='json', help='Output format')
-@click.option('--timeout', type=float, help='Operation timeout in seconds')
+@click.option('--format', '--fmt', 'output_format', type=click.Choice(['json', 'html', 'text']), 
+              default='text', help='Output format')
+@click.option('--timeout', '--time', type=float, help='Operation timeout in seconds')
 @click.pass_context
 def discover(ctx, target, transport, output, output_format, timeout):
-    """Discover server capabilities and potential attack surface."""
+    """Discover server capabilities and potential attack surface.
+    
+    Short alias: dis
+    
+    Example: mcpred dis https://api.example.com/mcp --tran https --fmt html
+    """
     
     config: MCPRedConfig = ctx.obj['config']
     
@@ -118,7 +144,7 @@ def discover(ctx, target, transport, output, output_format, timeout):
             client = MCPTeamClient(
                 target_url=target,
                 transport_type=transport,
-                security_config=config.security.dict() if hasattr(config.security, 'dict') else None
+                security_config=config.security.model_dump() if hasattr(config.security, 'model_dump') else None
             )
             
             # Set timeout if specified
@@ -165,21 +191,29 @@ def discover(ctx, target, transport, output, output_format, timeout):
     asyncio.run(run_discovery())
 
 
-@cli.command()
+@cli.command('scan')
 @click.argument('target', required=False)
-@click.option('--transport', '-t', type=click.Choice(['http', 'https', 'stdio', 'websocket', 'ws', 'wss']), 
-              default='http', help='Transport type')
+@click.option('--transport', '--tran', '-t', type=click.Choice(['http', 'https', 'stdio', 'websocket', 'ws', 'wss']), 
+              default='https', help='Transport type')
 @click.option('--output', '-o', type=click.Path(), help='Output file path')
-@click.option('--format', 'output_format', type=click.Choice(['json', 'html', 'text']), 
-              default='json', help='Output format')
-@click.option('--all-tests', is_flag=True, help='Run all security tests')
-@click.option('--skip-discovery', is_flag=True, help='Skip server discovery')
-@click.option('--skip-auth', is_flag=True, help='Skip authentication tests')
-@click.option('--skip-fuzz', is_flag=True, help='Skip protocol fuzzing')
-@click.option('--skip-stress', is_flag=True, help='Skip stress testing')
+@click.option('--format', '--fmt', 'output_format', type=click.Choice(['json', 'html', 'text']), 
+              default='text', help='Output format')
+@click.option('--auth/--noauth', default=True, help='Enable/disable authentication tests')
+@click.option('--discovery/--nodiscovery', '--dis/--nodis', default=True, help='Enable/disable server discovery')
+@click.option('--fuzz/--nofuzz', default=True, help='Enable/disable protocol fuzzing')
+@click.option('--stress/--nostress', default=True, help='Enable/disable stress testing')
 @click.pass_context
-def scan(ctx, target, transport, output, output_format, all_tests, skip_discovery, skip_auth, skip_fuzz, skip_stress):
-    """Run comprehensive security assessment."""
+def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, stress):
+    """Run comprehensive security assessment.
+    
+    Short alias: sc
+    
+    All tests enabled by default. Use --noauth, --nodis, --nofuzz, --nostress to disable.
+    
+    Examples:
+      mcpred sc https://api.example.com/mcp
+      mcpred sc https://api.example.com/mcp --tran https --fmt html --nofuzz --nostress
+    """
     
     config: MCPRedConfig = ctx.obj['config']
     
@@ -203,7 +237,7 @@ def scan(ctx, target, transport, output, output_format, all_tests, skip_discover
             client = MCPTeamClient(
                 target_url=target,
                 transport_type=transport,
-                security_config=config.security.dict() if hasattr(config.security, 'dict') else None
+                security_config=config.security.model_dump() if hasattr(config.security, 'model_dump') else None
             )
             
             # Run tests based on options
@@ -212,18 +246,18 @@ def scan(ctx, target, transport, output, output_format, all_tests, skip_discover
             protocol_violations = []
             stress_results = []
             
-            if not skip_discovery or all_tests:
+            if discovery:
                 click.echo("🔍 Running server discovery...")
                 capabilities = await client.discover_server()
                 click.echo(f"   Found {len(capabilities.tools)} tools, {len(capabilities.resources)} resources")
             
-            if not skip_auth or all_tests:
+            if auth:
                 click.echo("🔐 Running authentication tests...")
                 auth_issues = await client.test_authentication()
                 security_issues.extend(auth_issues)
                 click.echo(f"   Found {len(auth_issues)} authentication issues")
             
-            if not skip_fuzz or all_tests:
+            if fuzz:
                 click.echo("🔨 Running protocol fuzzing...")
                 violations = await client.fuzz_protocol(
                     request_count=config.security.max_fuzz_requests,
@@ -232,7 +266,7 @@ def scan(ctx, target, transport, output, output_format, all_tests, skip_discover
                 protocol_violations.extend(violations)
                 click.echo(f"   Found {len(violations)} protocol violations")
             
-            if not skip_stress or all_tests:
+            if stress:
                 click.echo("⚡ Running stress tests...")
                 stress_metrics = await client.stress_test()
                 stress_results.append(stress_metrics)
@@ -282,63 +316,133 @@ def scan(ctx, target, transport, output, output_format, all_tests, skip_discover
     asyncio.run(run_scan())
 
 
-@cli.command()
-@click.option('--output', '-o', type=click.Path(), default='.mcpred.yaml',
-              help='Output path for sample configuration')
+@cli.command('conf')
+@click.argument('filename', required=False)
 @click.pass_context
-def init(ctx, output):
-    """Initialize sample configuration file."""
+def conf(ctx, filename):
+    """Configuration management - create sample or validate existing.
+    
+    Without filename: Creates sample .mcpred configuration file
+    With filename: Validates the specified configuration file
+    
+    Examples:
+      mcpred conf                    # Create sample .mcpred
+      mcpred conf myconfig.mcpred    # Validate myconfig.mcpred
+    """
     
     config_loader: ConfigLoader = ctx.obj['config_loader']
     
+    if not filename:
+        # Create sample configuration file
+        output = '.mcpred'
+        try:
+            config_loader.create_sample_config(output)
+            click.echo(f"Sample configuration created at {output}")
+            click.echo("Edit the configuration file to customize your testing parameters.")
+        except Exception as e:
+            click.echo(f"Failed to create configuration: {e}", err=True)
+            sys.exit(1)
+    else:
+        # Validate specified configuration file
+        try:
+            is_valid = config_loader.validate_config_file(filename)
+            if is_valid:
+                click.echo(f"✅ Configuration file {filename} is valid")
+            else:
+                click.echo(f"❌ Configuration file {filename} is invalid")
+                sys.exit(1)
+        except Exception as e:
+            click.echo(f"Validation failed: {e}", err=True)
+            sys.exit(1)
+
+
+
+
+@cli.command('run')
+@click.argument('red_file', type=click.Path(exists=True))
+@click.pass_context
+def run_red(ctx, red_file):
+    """Run test definition from .red file.
+    
+    Examples:
+      mcpred bigtest.red
+      mcpred run quicktest.red
+    """
+    
+    if not red_file.endswith('.red'):
+        click.echo("Test definition file must have .red extension", err=True)
+        sys.exit(1)
+    
     try:
-        config_loader.create_sample_config(output)
-        click.echo(f"Sample configuration created at {output}")
-        click.echo("Edit the configuration file to customize your testing parameters.")
+        import yaml
+        with open(red_file, 'r') as f:
+            red_config = yaml.safe_load(f)
+        
+        # Extract test parameters
+        target = red_config.get('target')
+        transport = red_config.get('transport', 'https')
+        output = red_config.get('output')
+        output_format = red_config.get('format', 'text')
+        
+        # Test selection
+        auth = red_config.get('auth', True)
+        discovery = red_config.get('discovery', True)
+        fuzz = red_config.get('fuzz', True)
+        stress = red_config.get('stress', True)
+        
+        # Optional security config overrides
+        security_overrides = red_config.get('security', {})
+        transport_overrides = red_config.get('transport_config', {})
+        
+        if not target:
+            click.echo("Test definition file must specify 'target'", err=True)
+            sys.exit(1)
+        
+        click.echo(f"Running test definition: {red_file}")
+        
+        # Apply configuration overrides from .red file
+        config: MCPRedConfig = ctx.obj['config']
+        
+        # Apply security config overrides
+        if security_overrides:
+            for key, value in security_overrides.items():
+                if hasattr(config.security, key):
+                    setattr(config.security, key, value)
+        
+        # Apply transport config overrides  
+        if transport_overrides:
+            for key, value in transport_overrides.items():
+                if hasattr(config.transport, key):
+                    setattr(config.transport, key, value)
+        
+        # Run the scan with the parsed arguments
+        ctx.invoke(scan, 
+                  target=target,
+                  transport=transport,
+                  output=output,
+                  output_format=output_format,
+                  auth=auth,
+                  discovery=discovery,
+                  fuzz=fuzz,
+                  stress=stress)
+        
     except Exception as e:
-        click.echo(f"Failed to create configuration: {e}", err=True)
+        click.echo(f"Failed to run test definition: {e}", err=True)
         sys.exit(1)
 
 
-@cli.command()
-@click.option('--config-file', type=click.Path(exists=True), help='Configuration file to validate')
-@click.pass_context
-def validate(ctx, config_file):
-    """Validate configuration file."""
-    
-    config_loader: ConfigLoader = ctx.obj['config_loader']
-    
-    if not config_file:
-        # Find and validate discovered config
-        discovered = config_loader._discover_config_file()
-        if discovered:
-            config_file = discovered
-        else:
-            click.echo("No configuration file found to validate.", err=True)
-            sys.exit(1)
-    
-    try:
-        is_valid = config_loader.validate_config_file(config_file)
-        if is_valid:
-            click.echo(f"✅ Configuration file {config_file} is valid")
-        else:
-            click.echo(f"❌ Configuration file {config_file} is invalid")
-            sys.exit(1)
-    except Exception as e:
-        click.echo(f"Validation failed: {e}", err=True)
-        sys.exit(1)
-
-
-@cli.command()
-@click.pass_context
-def version(ctx):
-    """Show version information."""
-    from __init__ import __version__
-    click.echo(f"mcpred version {__version__}")
+# Add command aliases
+cli.add_command(discover, name='dis')
+cli.add_command(scan, name='sc')
 
 
 def main():
     """Main entry point for the CLI."""
+    # Check if first argument is a .red file
+    if len(sys.argv) > 1 and sys.argv[1].endswith('.red'):
+        # Insert 'run' command
+        sys.argv.insert(1, 'run')
+    
     cli()
 
 

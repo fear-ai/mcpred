@@ -268,12 +268,12 @@ targets:
 security:
   max_fuzz_requests: 1000
   malformed_rate: 0.3
-  enable_dangerous_tests: false
+  enable_dangerous: false
 
 reporting:
-  output_directory: "./reports"
-  default_format: "json"
-  include_raw_data: true
+  output_dir: "./reports"
+  default_fmt: "json"
+  include_raw: true
 
 log_level: "INFO"
 parallel_tests: true

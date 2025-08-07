@@ -31,7 +31,7 @@ class TestMCPTeamClientIntegration:
             response_timeout=5,
             max_fuzz_requests=10,  # Limit for testing
             malformed_rate=0.2,
-            max_concurrent_connections=5
+            max_connections=5
         )
         
         client = MCPTeamClient(
