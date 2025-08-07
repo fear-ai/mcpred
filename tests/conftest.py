@@ -95,7 +95,10 @@ def mock_client_session() -> AsyncMock:
     
     # Mock resource read
     session.read_resource.return_value = types.ReadResourceResult(
-        contents=[types.TextContent(type="text", text="Test content")]
+        contents=[types.TextResourceContents(
+            uri="test://resource",
+            text="Test content"
+        )]
     )
     
     # Mock send_request for custom requests
