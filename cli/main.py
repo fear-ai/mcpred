@@ -16,7 +16,7 @@ from reporting import ReportGenerator, ReportExporter
 
 
 # Set up logging
-def setup_logging(level: str = "INFO", log_file: Optional[str] = None):
+def setup_logging(level: str = "INFO"):
     """Set up logging configuration."""
     log_level = getattr(logging, level.upper(), logging.INFO)
     
@@ -28,25 +28,16 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None):
             logging.StreamHandler(sys.stdout)
         ]
     )
-    
-    # Add file handler if specified
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(
-            logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        )
-        logging.getLogger().addHandler(file_handler)
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=True, context_settings={'help_option_names': ['-h', '--help']})
 @click.option('--config', '--conf', '-c', type=click.Path(exists=True), help='Configuration file path')
 @click.option('--verbose', '--verb', is_flag=True, help='Enable verbose output')
-@click.option('--log-level', '--loglev', '-ll', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), 
+@click.option('--loglevel', '-ll', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), 
               default='INFO', help='Set logging level')
-@click.option('--log-file', '--logfile', '-lf', type=click.Path(), help='Log file path')
 @click.option('--version', '-v', is_flag=True, help='Show version information')
 @click.pass_context
-def cli(ctx, config, verbose, log_level, log_file, version):
+def cli(ctx, config, verbose, loglevel, version):
     """mcpred - MCP Red Team Client for security testing MCP servers.
     
     Quick usage:
@@ -75,9 +66,9 @@ def cli(ctx, config, verbose, log_level, log_file, version):
         sys.exit(0)
     
     # Set up logging - --loglevel overrides --verbose
-    if verbose and log_level == 'INFO':  # Only use verbose if loglevel wasn't explicitly set
-        log_level = 'DEBUG'
-    setup_logging(log_level, log_file)
+    if verbose and loglevel == 'INFO':  # Only use verbose if loglevel wasn't explicitly set
+        loglevel = 'DEBUG'
+    setup_logging(loglevel)
     
     # Load configuration
     config_loader = ConfigLoader()
@@ -88,10 +79,8 @@ def cli(ctx, config, verbose, log_level, log_file, version):
         cli_overrides = {}
         if verbose:
             cli_overrides['verbose'] = True
-        if log_level != 'INFO':
-            cli_overrides['log_level'] = log_level
-        if log_file:
-            cli_overrides['log_file'] = log_file
+        if loglevel != 'INFO':
+            cli_overrides['log_level'] = loglevel
         
         if cli_overrides:
             mcpred_config = config_loader.merge_cli_overrides(mcpred_config, cli_overrides)
@@ -141,15 +130,16 @@ def discover(ctx, target, transport, output, output_format, timeout):
             click.echo("No target specified. Use --target or configure default target.", err=True)
             sys.exit(1)
     
-    # Smart transport default: https URLs default to https transport 
-    if target and target.startswith('https://') and transport == 'https':
-        transport = 'https'
-    elif target and target.startswith('http://') and transport == 'https':
-        transport = 'http'
-    elif target and target.startswith('ws://') and transport == 'https':
-        transport = 'websocket'
-    elif target and target.startswith('wss://') and transport == 'https':
-        transport = 'websocket'
+    # Smart transport default: select transport from URL scheme if using default
+    if target and transport == 'https':  # Only apply smart defaults if using the CLI default
+        if target.startswith('https://'):
+            transport = 'https'
+        elif target.startswith('http://'):
+            transport = 'http'
+        elif target.startswith('ws://'):
+            transport = 'websocket'
+        elif target.startswith('wss://'):
+            transport = 'websocket'
     
     # Smart format default: .html/.htm output files default to html format
     if output and output_format == 'text':
@@ -255,15 +245,16 @@ def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, s
             click.echo("No target specified. Use --target or configure default target.", err=True)
             sys.exit(1)
     
-    # Smart transport default: https URLs default to https transport
-    if target and target.startswith('https://') and transport == 'https':
-        transport = 'https'
-    elif target and target.startswith('http://') and transport == 'https':
-        transport = 'http'
-    elif target and target.startswith('ws://') and transport == 'https':
-        transport = 'websocket'
-    elif target and target.startswith('wss://') and transport == 'https':
-        transport = 'websocket'
+    # Smart transport default: select transport from URL scheme if using default
+    if target and transport == 'https':  # Only apply smart defaults if using the CLI default
+        if target.startswith('https://'):
+            transport = 'https'
+        elif target.startswith('http://'):
+            transport = 'http'
+        elif target.startswith('ws://'):
+            transport = 'websocket'
+        elif target.startswith('wss://'):
+            transport = 'websocket'
     
     # Smart format default: .html/.htm output files default to html format
     if output and output_format == 'text':
