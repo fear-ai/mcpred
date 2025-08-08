@@ -127,6 +127,46 @@ class ConfigLoader:
             logger.error(f"Failed to create sample configuration: {e}")
             raise
     
+    def create_sample_red(self, output_path: str = "example.red") -> None:
+        """Create a sample .red test definition file."""
+        sample_red = {
+            # Test target configuration
+            "target": "https://api.example.com/mcp",
+            "transport": "https",
+            
+            # Output configuration
+            "output": "security-report.html", 
+            "format": "html",
+            
+            # Test selection - customize as needed
+            "auth": True,
+            "discovery": True,
+            "fuzz": True, 
+            "stress": False,
+            
+            # Override security settings for this specific test
+            "security": {
+                "max_fuzz_requests": 50,
+                "malformed_rate": 0.2,
+                "stress_duration": 30,
+                "enable_dangerous": False
+            },
+            
+            # Override transport settings for this specific test
+            "transport_config": {
+                "total_timeout": 60.0,
+                "connection_limit": 25,
+                "disable_ssl_verify": False
+            }
+        }
+        
+        try:
+            self._save_yaml_config(sample_red, output_path)
+            logger.info(f"Sample test definition created at {output_path}")
+        except Exception as e:
+            logger.error(f"Failed to create sample test definition: {e}")
+            raise
+    
     def merge_cli_overrides(
         self, 
         base_config: MCPRedConfig, 

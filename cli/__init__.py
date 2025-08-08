@@ -4,10 +4,7 @@ CLI modules for mcpred.
 Contains command-line interface implementation and command handlers.
 """
 
-from .main import main, cli
-from .commands import *
+# Import only what's needed to avoid circular imports
+# Individual modules should be imported directly when needed
 
-__all__ = [
-    "main",
-    "cli",
-]
+__all__ = []

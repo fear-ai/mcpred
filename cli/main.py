@@ -10,10 +10,6 @@ from typing import Optional
 
 import click
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from config import ConfigLoader, MCPRedConfig
 from core.client import MCPTeamClient
 from reporting import ReportGenerator, ReportExporter
@@ -365,30 +361,44 @@ def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, s
 
 @cli.command('conf')
 @click.argument('filename', required=False)
+@click.option('--type', '-t', type=click.Choice(['test', 'global']), default='test',
+              help='Generate test definition (example.red) or global config (.mcpred)')
 @click.pass_context
-def conf(ctx, filename):
+def conf(ctx, filename, type):
     """Configuration management - create sample or validate existing.
     
-    Without filename: Creates sample .mcpred configuration file
+    Without filename: Creates example.red test definition by default
+    With --type global: Creates .mcpred global configuration  
     With filename: Validates the specified configuration file
     
     Examples:
-      mcpred conf                    # Create sample .mcpred
-      mcpred conf myconfig.mcpred    # Validate myconfig.mcpred
+      mcpred conf                        # Create example.red
+      mcpred conf --type global          # Create .mcpred
+      mcpred conf mytest.red             # Validate mytest.red
     """
     
     config_loader: ConfigLoader = ctx.obj['config_loader']
     
     if not filename:
         # Create sample configuration file
-        output = '.mcpred'
-        try:
-            config_loader.create_sample_config(output)
-            click.echo(f"Sample configuration created at {output}")
-            click.echo("Edit the configuration file to customize your testing parameters.")
-        except Exception as e:
-            click.echo(f"Failed to create configuration: {e}", err=True)
-            sys.exit(1)
+        if type == 'global':
+            output = '.mcpred'
+            try:
+                config_loader.create_sample_config(output)
+                click.echo(f"Global configuration created at {output}")
+                click.echo("Edit to customize global settings applied to all tests.")
+            except Exception as e:
+                click.echo(f"Failed to create global configuration: {e}", err=True)
+                sys.exit(1)
+        else:  # type == 'test'
+            output = 'example.red'
+            try:
+                config_loader.create_sample_red(output)
+                click.echo(f"Test definition created at {output}")
+                click.echo("Edit to customize test parameters, then run: mcpred example.red")
+            except Exception as e:
+                click.echo(f"Failed to create test definition: {e}", err=True)
+                sys.exit(1)
     else:
         # Validate specified configuration file
         try:

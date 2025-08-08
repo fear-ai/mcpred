@@ -18,6 +18,10 @@
 ## Development Improvements
 
 ### CLI Enhancements
+- [x] **Short CLI options** - Added -h, -v, -lf, -ll aliases (COMPLETED)
+- [x] **Smart defaults** - https transport, text format based on URLs/file extensions (COMPLETED) 
+- [x] **Configuration system** - Dual-layer .mcpred + .red file support (COMPLETED)
+- [x] **CLI test automation** - 80+ tests with 6 test suites and batch processing (COMPLETED)
 - [ ] **Complete missing commands** - Implement `auth`, `fuzz`, `stress` commands referenced in main CLI
 - [ ] **Progress indicators** - Add Rich progress bars for long-running operations
 - [ ] **Error handling** - Improve user-friendly error messages and recovery
@@ -64,6 +68,9 @@
 - [ ] **Logging improvements** - Better structured logging with correlation IDs
 
 ### Documentation Gaps
+- [x] **Installation flexibility** - Added dual uv/pip installation methods with requirements.txt (COMPLETED)
+- [x] **CLI comprehensive documentation** - Complete command reference with all options and examples (COMPLETED) 
+- [x] **Test execution documentation** - Detailed CLI testing framework usage guide (COMPLETED)
 - [ ] **Security testing methodology** - Document testing approaches and rationale
 - [ ] **Vulnerability classification** - Clear criteria for risk assessment
 - [ ] **Integration examples** - Real-world usage scenarios and case studies
@@ -110,6 +117,13 @@
 - [ ] **Threat modeling integration** - STRIDE/PASTA methodology integration
 
 ## Next Sprint Focus
+
+**Completed Major Features:**
+- [x] CLI short options and smart defaults implementation
+- [x] Dual-layer configuration system (.mcpred + .red files)  
+- [x] Comprehensive CLI test automation (80+ tests, 75% speed improvement)
+- [x] Documentation updates with dual installation method support
+- [x] Requirements.txt generation for pip compatibility
 
 **Priority order for immediate development:**
 1. Fix async test mocking issues (blocking 95+ test success)

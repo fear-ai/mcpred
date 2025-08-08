@@ -15,7 +15,7 @@ Designed for authorized security research and vulnerability assessment.
 
 **Requirements:**
 - Python 3.12+ (with asyncio support)
-- uv package manager
+- Package manager: uv (recommended) or pip
 - Git
 
 **Dependencies automatically installed:**
@@ -24,7 +24,8 @@ Designed for authorized security research and vulnerability assessment.
 - `pydantic` - Data validation and settings management
 - `aiohttp` - Async HTTP client/server framework
 - `pyyaml` - YAML configuration file support
-- `jinja2` - Template engine for HTML reports
+- `rich` - Terminal formatting and progress indicators
+- `websockets` - WebSocket transport support
 - `pytest` - Testing framework (development)
 
 ```bash
@@ -32,20 +33,27 @@ Designed for authorized security research and vulnerability assessment.
 git clone https://github.com/fear-ai/mcpred.git
 cd mcpred
 
-# Install with uv (recommended)
+# Option 1: Install with uv (recommended - faster, better dependency resolution)
 uv sync --dev
 
-# Or install with pip
-pip install -r requirements.txt
+# Option 2: Install with pip (alternative method)
+pip install -e .                    # Editable install for development
+pip install -r requirements.txt     # Install exact dependency versions
+
+# For pip users: install development dependencies separately
+pip install pytest pytest-asyncio pytest-cov
 ```
 
 ### Basic Usage
 ```bash
-# Discover server capabilities (short alias: dis)
-mcpred discover https://api.example.com/mcp
+# Create test definition (new recommended workflow)
+mcpred conf                                   # Creates example.red
+# Edit example.red with your target and settings
+mcpred example.red                           # Run the test definition
 
-# Run comprehensive security assessment (short alias: sc)
-mcpred scan https://api.example.com/mcp
+# Direct command usage
+mcpred discover https://api.example.com/mcp  # Discover capabilities (alias: dis)
+mcpred scan https://api.example.com/mcp      # Security assessment (alias: sc)
 
 # Generate HTML security report
 mcpred scan https://api.example.com/mcp -o report.html --fmt html
@@ -137,20 +145,25 @@ mcpred sc https://api.example.com/mcp --noauth --tran websocket
 ```
 
 #### `conf` - Configuration Management
-Create sample configuration file or validate existing configuration.
+Create test definitions or global configuration files, or validate existing configuration.
 
 ```bash
-mcpred conf [FILENAME]
+mcpred conf [OPTIONS] [FILENAME]
 ```
 
+**Options:**
+- `--type, -t` - Configuration type: `test` (default) or `global`
+
 **Behavior:**
-- Without filename: Creates sample `.mcpred` configuration file
+- Without filename: Creates `example.red` test definition (default) or `.mcpred` global config
 - With filename: Validates the specified configuration file
 
 **Examples:**
 ```bash
-mcpred conf                      # Create sample .mcpred
-mcpred conf myconfig.mcpred      # Validate myconfig.mcpred
+mcpred conf                        # Create example.red test definition
+mcpred conf --type global          # Create .mcpred global configuration
+mcpred conf mytest.red             # Validate mytest.red
+mcpred conf --type test            # Create example.red (explicit)
 ```
 
 #### `run` - Test Definition Execution
@@ -181,7 +194,7 @@ mcpred uses YAML configuration files for flexible, human-readable settings manag
 
 ### Global Configuration (.mcpred)
 
-The `.mcpred` file contains global settings that apply to all mcpred operations. It's automatically loaded from the current directory if present.
+The `.mcpred` file contains global settings that apply to all mcpred operations. It's automatically loaded from the current directory if present. Create with `mcpred conf --type global`.
 
 **YAML Format Features:**
 - Human-readable hierarchical structure
@@ -264,6 +277,39 @@ transport_config:
   connect_timeout: 20.0
 ```
 
+## Development and Testing
+
+### CLI Test Automation
+
+mcpred includes comprehensive CLI validation tests with performance optimizations:
+
+```bash
+# Run all test suites (80+ tests, ~30 seconds with batch processing)
+python test_cli.py
+
+# Run specific test suite for faster feedback
+python test_cli.py --suite basic       # Basic commands (19 tests)
+python test_cli.py --suite options     # Option validation (40+ tests)  
+python test_cli.py --suite files       # File operations (6 tests)
+python test_cli.py --suite red         # .red file operations (6 tests)
+python test_cli.py --suite logging     # Logging behavior (16 tests)
+python test_cli.py --suite errors      # Error handling (25+ tests)
+
+# Performance options
+python test_cli.py --batch             # Parallel execution (default)
+python test_cli.py --no-batch          # Sequential execution (debugging)
+python test_cli.py --parallel          # Run test suites in parallel
+
+# Development workflow
+python test_cli.py --suite basic --batch    # Quick validation (~10 seconds)
+```
+
+**Test Suite Features:**
+- **Batch Processing:** Runs tests in parallel using ThreadPoolExecutor for 75% speed improvement
+- **Selective Testing:** Run individual test suites for faster development cycles
+- **Comprehensive Coverage:** Tests CLI options, file operations, error handling, smart defaults
+- **Network-Safe:** Uses mock URLs to avoid external dependencies
+
 ## Advanced Usage
 
 ### Smart Defaults
@@ -301,8 +347,28 @@ mcpred sc https://api.example.com/mcp -o report.json --fmt json
 ## Requirements
 
 - **Python 3.12+** - Modern async support required
-- **UV package manager** - Fast, reliable dependency management
+- **Package manager** - UV (recommended) or pip with requirements.txt
 - **MCP server access** - Target servers must be accessible for testing
+
+### Installation Methods
+
+**UV (Recommended):**
+```bash
+uv sync --dev
+```
+- **Faster**: 10-100x faster than pip
+- **Better dependency resolution**: Handles conflicts automatically
+- **Lock file**: Reproducible builds across environments
+
+**Pip (Alternative):**
+```bash
+pip install -e .                    # Editable development install
+pip install -r requirements.txt     # Exact versions from uv
+pip install pytest pytest-asyncio pytest-cov  # Development dependencies
+```
+- **Editable install (`-e`)**: Source changes take effect immediately
+- **Requirements.txt**: Generated from uv for pip compatibility
+- **Development workflow**: Ideal for contributing or customizing
 
 ## Documentation
 
