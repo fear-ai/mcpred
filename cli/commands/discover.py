@@ -42,7 +42,7 @@ def discover(ctx, target, transport, output, output_format, timeout, fingerprint
     
     config = ctx.obj.get('config')
     
-    click.echo(f"🔍 Discovering capabilities for {target} using {transport} transport...")
+    click.echo(f"Discovering capabilities for {target} using {transport} transport...")
     
     async def run_discovery():
         try:
@@ -67,12 +67,12 @@ def discover(ctx, target, transport, output, output_format, timeout, fingerprint
             
             # Additional fingerprinting if requested
             if fingerprint:
-                click.echo("🔬 Running server fingerprinting...")
+                click.echo("Running server fingerprinting...")
                 # Fingerprinting would be done during discovery
                 # This is just for user feedback
             
             # Display console output
-            click.echo(f"\n📋 Discovery Results:")
+            click.echo(f"\nDiscovery Results:")
             click.echo(f"   Transport Methods: {', '.join(capabilities.transport_methods)}")
             click.echo(f"   Tools Found: {len(capabilities.tools)}")
             click.echo(f"   Resources Found: {len(capabilities.resources)}")
@@ -87,20 +87,20 @@ def discover(ctx, target, transport, output, output_format, timeout, fingerprint
                     if issue.get('severity') in ['high', 'critical']
                 ]
                 if high_issues:
-                    click.echo(f"   ⚠️  High/Critical Issues: {len(high_issues)}")
+                    click.echo(f"   High/Critical Issues: {len(high_issues)}")
             
             # Show detailed information if requested
             if show_tools and capabilities.tools:
-                click.echo(f"\n🔧 Tools:")
+                click.echo(f"\nTools:")
                 for tool in capabilities.tools[:5]:  # Show first 5
-                    click.echo(f"   • {tool.name}: {tool.description}")
+                    click.echo(f"   - {tool.name}: {tool.description}")
                 if len(capabilities.tools) > 5:
                     click.echo(f"   ... and {len(capabilities.tools) - 5} more")
             
             if show_resources and capabilities.resources:
-                click.echo(f"\n📁 Resources:")
+                click.echo(f"\nResources:")
                 for resource in capabilities.resources[:5]:  # Show first 5
-                    click.echo(f"   • {resource.name}: {resource.uri}")
+                    click.echo(f"   - {resource.name}: {resource.uri}")
                 if len(capabilities.resources) > 5:
                     click.echo(f"   ... and {len(capabilities.resources) - 5} more")
             
@@ -117,16 +117,16 @@ def discover(ctx, target, transport, output, output_format, timeout, fingerprint
                 # Export report
                 exporter = ReportExporter()
                 exported_path = exporter.export_report(report_data, output, output_format)
-                click.echo(f"\n📄 Discovery report saved to {exported_path}")
+                click.echo(f"\nDiscovery report saved to {exported_path}")
             
             # Return success
             return 0
             
         except KeyboardInterrupt:
-            click.echo("\n⏸️  Discovery interrupted by user", err=True)
+            click.echo("\nDiscovery interrupted by user", err=True)
             return 130
         except Exception as e:
-            click.echo(f"\n❌ Discovery failed: {e}", err=True)
+            click.echo(f"\nDiscovery failed: {e}", err=True)
             return 1
     
     # Run async operation and exit with return code

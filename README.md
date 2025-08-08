@@ -3,11 +3,7 @@
 A Python command-line tool for security testing MCP (Model Context Protocol) servers.
 Designed for authorized security research and vulnerability assessment.
 
-## What is mcpred?
-
-mcpred enables security researchers and penetration testers to assess MCP server implementations for vulnerabilities through:
-
-- **Server Discovery** - Enumerate capabilities, resources, tools, and attack surface
+- **Server Discovery** - Enumerate capabilities, resources, tools, and suggest an attack surface
 - **Authentication Testing** - Test OAuth flows, token handling, and privilege escalation
 - **Protocol Fuzzing** - JSON-RPC malformation testing and schema validation bypass
 - **Stress Testing** - DoS resistance, connection limits, and resource exhaustion testing
@@ -16,10 +12,31 @@ mcpred enables security researchers and penetration testers to assess MCP server
 ## Quick Start
 
 ### Installation
+
+**Requirements:**
+- Python 3.12+ (with asyncio support)
+- uv package manager
+- Git
+
+**Dependencies automatically installed:**
+- `mcp` - Official Model Context Protocol SDK
+- `click` - Modern command-line interface framework  
+- `pydantic` - Data validation and settings management
+- `aiohttp` - Async HTTP client/server framework
+- `pyyaml` - YAML configuration file support
+- `jinja2` - Template engine for HTML reports
+- `pytest` - Testing framework (development)
+
 ```bash
+# Clone repository
 git clone https://github.com/fear-ai/mcpred.git
 cd mcpred
+
+# Install with uv (recommended)
 uv sync --dev
+
+# Or install with pip
+pip install -r requirements.txt
 ```
 
 ### Basic Usage
@@ -152,49 +169,61 @@ mcpred quicktest.red  # Direct execution
 
 ### Common Options
 - `--config, --conf, -c` - Configuration file path
-- `--verbose, --verb, -v` - Enable verbose output
-- `--log-level, --loglev` - Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) [default: INFO]
-- `--log-file, --logfile` - Log file path
-- `--version` - Show version information
-- `--help` - Show help message
+- `--verbose, --verb` - Enable verbose output
+- `--log-level, --loglev, -ll` - Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) [default: INFO] (overrides --verbose)
+- `--log-file, --logfile, -lf` - Log file path
+- `--version, -v` - Show version information
+- `--help, -h` - Show help message
 
 ## Configuration
 
-### Configuration File (.mcpred)
+mcpred uses YAML configuration files for flexible, human-readable settings management.
 
-Create `.mcpred` configuration file:
+### Global Configuration (.mcpred)
+
+The `.mcpred` file contains global settings that apply to all mcpred operations. It's automatically loaded from the current directory if present.
+
+**YAML Format Features:**
+- Human-readable hierarchical structure
+- Comments supported with `#`
+- Type-safe values (strings, numbers, booleans, arrays, objects)
+- Multi-line strings and environment variable support
+
+Create `.mcpred` global configuration:
 ```yaml
-# Security testing configuration
+# Global Security Settings - applied to all tests
 security:
-  max_fuzz_requests: 100
-  malformed_rate: 0.3
-  enable_dangerous: false
-  max_connections: 50
-  stress_duration: 60
-  request_rate: 10
+  max_fuzz_requests: 100        # Maximum fuzzing requests per test
+  malformed_rate: 0.3           # Percentage of malformed requests (0.0-1.0)
+  enable_dangerous: false       # Enable dangerous tests (use with caution)
+  max_connections: 50           # Maximum concurrent connections
+  stress_duration: 60           # Stress test duration in seconds
 
-# Transport configuration
+# Global Transport Settings - network configuration
 transport:
-  total_timeout: 30.0
-  connect_timeout: 10.0
-  response_timeout: 5.0
-  disable_ssl_verify: false
-  connection_limit: 100
-  per_host_limit: 30
+  total_timeout: 30.0           # Total operation timeout
+  connect_timeout: 10.0         # Connection establishment timeout
+  disable_ssl_verify: false     # Disable SSL certificate verification
+  connection_limit: 100         # HTTP connection pool limit
 
-# Reporting configuration
+# Global Reporting Settings - output configuration
 reporting:
-  output_dir: "./reports"
-  default_fmt: "text"
-  include_raw: false
+  output_dir: "./reports"       # Default output directory
+  default_fmt: "text"          # Default format: text, html, json
+  include_raw: true            # Include raw protocol data
+  auto_open: false             # Auto-open HTML reports
 
-# Logging
-log_level: "INFO"
+# Global Application Settings
+log_level: "INFO"              # Logging level
+verbose: false                 # Verbose output mode
+parallel_tests: true          # Run tests in parallel
+fail_fast: false              # Stop on first failure
+timeout: 300.0                # Global operation timeout
 ```
 
-### Test Definition Files
+### Test Definition Files (.red)
 
-Create reusable test configurations with `.red` extension:
+Test definition files use `.red` extension and define complete security test configurations. They override global settings when specified.
 
 ```yaml
 # quicktest.red - Basic discovery only
@@ -235,78 +264,38 @@ transport_config:
   connect_timeout: 20.0
 ```
 
-## Usage Examples
+## Advanced Usage
 
-### Simple Discovery
+### Smart Defaults
+mcpred automatically selects appropriate defaults:
 ```bash
-# Quick server enumeration
-mcpred dis https://api.example.com/mcp
+# https:// URLs automatically use https transport
+mcpred sc https://api.example.com/mcp
 
-# Discovery with custom transport and HTML output
-mcpred discover wss://ws.example.com/mcp --tran websocket --fmt html -o discovery.html
+# .html/.htm files automatically use html format  
+mcpred sc https://api.example.com/mcp -o report.html
 
-# Stdio server discovery
-mcpred dis "python -m server" --tran stdio --fmt json
+# WebSocket URLs automatically use websocket transport
+mcpred dis wss://ws.example.com/mcp
 ```
 
-### Comprehensive Security Assessment
+### Logging and Debugging
 ```bash
-# Full security scan with all tests
-mcpred sc https://api.example.com/mcp -o full-report.html --fmt html
+# Verbose output with debug logging
+mcpred sc https://api.example.com/mcp --loglev DEBUG -lf debug.log
 
-# Targeted testing (skip resource-intensive tests)
-mcpred scan https://api.example.com/mcp --nofuzz --nostress
-
-# Authentication-focused testing
-mcpred sc https://api.example.com/mcp --nodis --nofuzz --nostress --auth
-```
-
-### Configuration-Based Testing
-```bash
-# Create and customize configuration
-mcpred conf # Creates example.red
-# Edit with your settings
-mcpred conf --conf conf.red https://prod.example.com/mcp
-
-# Validate configuration before testing
-mcpred sc production.mcpred
-```
-
-### Test Definition Workflows
-```bash
-# Create test definition for repeated use
-cat > daily-check.red << EOF
-target: "https://api.example.com/mcp"
-format: "html"
-output: "daily-security-check.html"
-auth: true
-discovery: true
-fuzz: false
-stress: false
-EOF
-
-# Run tests directly from definitions
-mcpred daily.red
-mcpred quicktest.red    # Basic discovery
-mcpred bigtest.red      # Comprehensive assessment
-```
-
-### Advanced Usage
-```bash
-# Verbose logging for debugging
-mcpred sc https://api.example.com/mcp --loglev DEBUG --logfile mcpred.log
+# Note: --loglevel overrides --verbose flag
+mcpred sc https://api.example.com/mcp --verbose -ll INFO  # Uses INFO level
 
 # Custom timeout for slow servers
-mcpred dis https://slow-api.example.com/mcp --time 60
+mcpred dis https://slow-api.example.com/mcp --time 120
+```
 
-# Multiple output formats
+### Multiple Output Formats
+mcpred automatically generates both requested format and HTML for analysis:
+```bash
+# Generates both report.json and report.html
 mcpred sc https://api.example.com/mcp -o report.json --fmt json
-# Automatically generates report.html as well
-
-# Batch testing with different configurations
-for config in dev.mcpred staging.mcpred prod.mcpred; do
-    mcpred sc --conf $config -o "report-$(basename $config .mcpred).html"
-done
 ```
 
 ## Requirements
@@ -321,19 +310,75 @@ done
 - **GITHUB.md** - Repository management and security configuration guide  
 - **TODO.md** - Development status and next steps for contributors
 
-## Security Warning
+## Security Considerations
 
-⚠️ **AUTHORIZED TESTING ONLY** - This tool is designed for security research and authorized penetration testing.
+**AUTHORIZED TESTING ONLY** - This tool is designed for security research and authorized penetration testing.
 
 - Only test servers you own or have explicit permission to test
 - Some tests may impact server performance or availability  
 - Follow responsible disclosure practices for any vulnerabilities discovered
 - Use `enable_dangerous: false` in production environments
 
-## License
+## Warnings and Disclaimers
 
-This project is focused on **defensive security** and authorized testing.
-It is designed to help improve MCP server security through responsible vulnerability research and disclosure.
+### LEGAL DISCLAIMER
+
+**AUTHORIZED USE ONLY**: This software is designed exclusively for authorized security testing, vulnerability research, and defensive security purposes. Users must obtain explicit written permission before testing any systems they do not own.
+
+**LEGAL COMPLIANCE**: Users are solely responsible for ensuring their use of this software complies with all applicable local, state, national, and international laws and regulations. Unauthorized access to computer systems is illegal in most jurisdictions.
+
+**NO WARRANTIES**: This software is provided "AS IS" without any warranties of any kind, either express or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, or non-infringement.
+
+### TECHNICAL RISKS AND LIMITATIONS
+
+**SYSTEM IMPACT**: Security testing may cause:
+- Temporary service degradation or unavailability
+- Resource exhaustion on target systems
+- Log file growth and storage consumption
+- Network congestion or connection limits
+- Unintended data exposure or modification
+
+**ACCURACY LIMITATIONS**: 
+- False positives and false negatives are possible
+- Test results may not reflect all security vulnerabilities
+- Protocol implementations may behave differently than expected
+- Network conditions can affect test reliability and completeness
+
+**SCOPE LIMITATIONS**:
+- Tests focus on MCP protocol implementation security
+- Operating system and infrastructure security is not assessed
+- Application logic vulnerabilities may not be detected
+- Third-party integrations and dependencies are not evaluated
+
+### RESPONSIBLE USE GUIDELINES
+
+**DEFENSIVE SECURITY FOCUS**: This tool is designed to improve security through:
+- Vulnerability identification and remediation
+- Security control validation and verification
+- Compliance testing and risk assessment
+- Defensive security posture improvement
+
+**RESPONSIBLE DISCLOSURE**: When vulnerabilities are discovered:
+- Report findings to system owners immediately
+- Provide detailed technical information for remediation
+- Allow reasonable time for fixes before public disclosure
+- Follow coordinated vulnerability disclosure practices
+- Document and preserve evidence for security improvement
+
+**OPERATIONAL SAFETY**:
+- Start with minimal test parameters and increase gradually
+- Monitor system performance during testing
+- Have rollback procedures ready for production systems
+- Maintain detailed logs of all testing activities
+- Coordinate with system administrators and security teams
+
+### LIABILITY AND DAMAGES
+
+**LIMITATION OF LIABILITY**: Under no circumstances shall the authors, contributors, or distributors be liable for any direct, indirect, incidental, special, exemplary, or consequential damages arising from the use of this software.
+
+**USER RESPONSIBILITY**: Users acknowledge they use this software at their own risk and are fully responsible for any consequences, damages, or legal issues resulting from its use.
+
+**INDEMNIFICATION**: Users agree to indemnify and hold harmless the software authors and contributors from any claims, damages, losses, or legal actions arising from unauthorized or improper use of this software.
 
 ## Support
 

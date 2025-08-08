@@ -24,20 +24,35 @@ class ConfigLoader:
         self.config_validator = ConfigValidator()
     
     def load_config(self, config_path: Optional[str] = None) -> MCPRedConfig:
-        """Load configuration from file or discover default config."""
+        """Load configuration from file or discover default config.
+        Always loads .mcpred for global settings if present.
+        """
         try:
+            # Start with global settings from .mcpred if it exists
+            global_config = {}
+            mcpred_path = Path.cwd() / '.mcpred'
+            if mcpred_path.exists():
+                logger.info(f"Loading global settings from: {mcpred_path}")
+                global_config = self._load_config_file(str(mcpred_path))
+            
             if config_path:
-                # Load specific config file
-                config_dict = self._load_config_file(config_path)
+                # Load specific config file and merge with global settings
+                specific_config = self._load_config_file(config_path)
+                # Merge specific config over global config
+                config_dict = {**global_config, **specific_config}
             else:
-                # Discover and load default config
-                discovered_path = self._discover_config_file()
-                if discovered_path:
-                    logger.info(f"Found configuration file: {discovered_path}")
-                    config_dict = self._load_config_file(discovered_path)
+                # Use only global config if no specific config specified
+                if global_config:
+                    config_dict = global_config
                 else:
-                    logger.info("No configuration file found, using defaults")
-                    config_dict = {}
+                    # Discover and load default config
+                    discovered_path = self._discover_config_file()
+                    if discovered_path and discovered_path != str(mcpred_path):
+                        logger.info(f"Found configuration file: {discovered_path}")
+                        config_dict = self._load_config_file(discovered_path)
+                    else:
+                        logger.info("No configuration file found, using defaults")
+                        config_dict = {}
             
             # Validate and return configuration
             return self.config_validator.validate_config_dict(config_dict)
@@ -72,23 +87,17 @@ class ConfigLoader:
             logger.error(f"Configuration save failed: {e}")
             raise
     
-    def create_sample_config(self, output_path: str = ".mcpred.yaml") -> None:
-        """Create a sample configuration file."""
+    def create_sample_config(self, output_path: str = ".mcpred") -> None:
+        """Create a sample global configuration file (.mcpred)."""
         sample_config = {
-            "targets": [
-                {
-                    "url": "https://localhost:8080",
-                    "transport_type": "https",
-                    "name": "local-server",
-                    "description": "Local development server"
-                }
-            ],
+            # Global transport settings
             "transport": {
                 "connection_limit": 100,
                 "total_timeout": 30.0,
                 "connect_timeout": 10.0,
                 "disable_ssl_verify": False
             },
+            # Global security settings
             "security": {
                 "max_fuzz_requests": 100,
                 "malformed_rate": 0.3,
@@ -96,12 +105,14 @@ class ConfigLoader:
                 "stress_duration": 60,
                 "enable_dangerous": False
             },
+            # Global reporting settings
             "reporting": {
                 "output_dir": "./reports",
                 "default_fmt": "text",
                 "include_raw": True,
                 "auto_open": False
             },
+            # Global application settings
             "log_level": "INFO",
             "verbose": False,
             "parallel_tests": True,

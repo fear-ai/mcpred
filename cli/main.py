@@ -42,13 +42,13 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None):
         logging.getLogger().addHandler(file_handler)
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.option('--config', '--conf', '-c', type=click.Path(exists=True), help='Configuration file path')
-@click.option('--verbose', '--verb', '-v', is_flag=True, help='Enable verbose output')
-@click.option('--log-level', '--loglev', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), 
+@click.option('--verbose', '--verb', is_flag=True, help='Enable verbose output')
+@click.option('--log-level', '--loglev', '-ll', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']), 
               default='INFO', help='Set logging level')
-@click.option('--log-file', '--logfile', type=click.Path(), help='Log file path')
-@click.option('--version', is_flag=True, help='Show version information')
+@click.option('--log-file', '--logfile', '-lf', type=click.Path(), help='Log file path')
+@click.option('--version', '-v', is_flag=True, help='Show version information')
 @click.pass_context
 def cli(ctx, config, verbose, log_level, log_file, version):
     """mcpred - MCP Red Team Client for security testing MCP servers.
@@ -73,8 +73,13 @@ def cli(ctx, config, verbose, log_level, log_file, version):
             click.echo("mcpred version unknown")
         sys.exit(0)
     
-    # Set up logging
-    if verbose:
+    # Show help if no command provided
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        sys.exit(0)
+    
+    # Set up logging - --loglevel overrides --verbose
+    if verbose and log_level == 'INFO':  # Only use verbose if loglevel wasn't explicitly set
         log_level = 'DEBUG'
     setup_logging(log_level, log_file)
     
@@ -117,6 +122,10 @@ def cli(ctx, config, verbose, log_level, log_file, version):
 def discover(ctx, target, transport, output, output_format, timeout):
     """Discover server capabilities and potential attack surface.
     
+    Smart defaults:
+    - https:// URLs default to https transport
+    - .html/.htm output files default to html format
+    
     Short alias: dis
     
     Example: mcpred dis https://api.example.com/mcp --tran https --fmt html
@@ -135,6 +144,23 @@ def discover(ctx, target, transport, output, output_format, timeout):
         else:
             click.echo("No target specified. Use --target or configure default target.", err=True)
             sys.exit(1)
+    
+    # Smart transport default: https URLs default to https transport 
+    if target and target.startswith('https://') and transport == 'https':
+        transport = 'https'
+    elif target and target.startswith('http://') and transport == 'https':
+        transport = 'http'
+    elif target and target.startswith('ws://') and transport == 'https':
+        transport = 'websocket'
+    elif target and target.startswith('wss://') and transport == 'https':
+        transport = 'websocket'
+    
+    # Smart format default: .html/.htm output files default to html format
+    if output and output_format == 'text':
+        if output.lower().endswith('.html') or output.lower().endswith('.htm'):
+            output_format = 'html'
+        elif output.lower().endswith('.json'):
+            output_format = 'json'
     
     click.echo(f"Discovering capabilities for {target} using {transport} transport...")
     
@@ -206,6 +232,10 @@ def discover(ctx, target, transport, output, output_format, timeout):
 def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, stress):
     """Run comprehensive security assessment.
     
+    Smart defaults:
+    - https:// URLs default to https transport
+    - .html/.htm output files default to html format
+    
     Short alias: sc
     
     All tests enabled by default. Use --noauth, --nodis, --nofuzz, --nostress to disable.
@@ -229,6 +259,23 @@ def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, s
             click.echo("No target specified. Use --target or configure default target.", err=True)
             sys.exit(1)
     
+    # Smart transport default: https URLs default to https transport
+    if target and target.startswith('https://') and transport == 'https':
+        transport = 'https'
+    elif target and target.startswith('http://') and transport == 'https':
+        transport = 'http'
+    elif target and target.startswith('ws://') and transport == 'https':
+        transport = 'websocket'
+    elif target and target.startswith('wss://') and transport == 'https':
+        transport = 'websocket'
+    
+    # Smart format default: .html/.htm output files default to html format
+    if output and output_format == 'text':
+        if output.lower().endswith('.html') or output.lower().endswith('.htm'):
+            output_format = 'html'
+        elif output.lower().endswith('.json'):
+            output_format = 'json'
+    
     click.echo(f"Running security assessment for {target}...")
     
     async def run_scan():
@@ -247,18 +294,18 @@ def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, s
             stress_results = []
             
             if discovery:
-                click.echo("🔍 Running server discovery...")
+                click.echo("Running server discovery...")
                 capabilities = await client.discover_server()
                 click.echo(f"   Found {len(capabilities.tools)} tools, {len(capabilities.resources)} resources")
             
             if auth:
-                click.echo("🔐 Running authentication tests...")
+                click.echo("Running authentication tests...")
                 auth_issues = await client.test_authentication()
                 security_issues.extend(auth_issues)
                 click.echo(f"   Found {len(auth_issues)} authentication issues")
             
             if fuzz:
-                click.echo("🔨 Running protocol fuzzing...")
+                click.echo("Running protocol fuzzing...")
                 violations = await client.fuzz_protocol(
                     request_count=config.security.max_fuzz_requests,
                     malformed_rate=config.security.malformed_rate
@@ -267,7 +314,7 @@ def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, s
                 click.echo(f"   Found {len(violations)} protocol violations")
             
             if stress:
-                click.echo("⚡ Running stress tests...")
+                click.echo("Running stress tests...")
                 stress_metrics = await client.stress_test()
                 stress_results.append(stress_metrics)
                 click.echo("   Stress testing completed")
@@ -285,7 +332,7 @@ def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, s
             
             # Show summary
             exec_summary = report_data.get('executive_summary', {})
-            click.echo(f"\n📊 Assessment Summary:")
+            click.echo(f"\nAssessment Summary:")
             click.echo(f"   Overall Risk: {exec_summary.get('overall_risk_level', 'Unknown').upper()}")
             click.echo(f"   Total Vulnerabilities: {exec_summary.get('total_vulnerabilities', 0)}")
             
@@ -294,19 +341,19 @@ def scan(ctx, target, transport, output, output_format, auth, discovery, fuzz, s
                 # Export to file
                 exporter = ReportExporter()
                 exported_path = exporter.export_report(report_data, output, output_format)
-                click.echo(f"\n📋 Full report saved to {exported_path}")
+                click.echo(f"\nFull report saved to {exported_path}")
                 
                 # Also export HTML for easy viewing
                 if output_format != 'html':
                     html_path = str(Path(output).with_suffix('.html'))
                     exporter.export_report(report_data, html_path, 'html')
-                    click.echo(f"📋 HTML report saved to {html_path}")
+                    click.echo(f"HTML report saved to {html_path}")
             else:
                 # Brief console output
                 if exec_summary.get('top_concerns'):
-                    click.echo(f"\n⚠️  Top Concerns:")
+                    click.echo(f"\nTop Concerns:")
                     for concern in exec_summary['top_concerns'][:3]:
-                        click.echo(f"   • {concern}")
+                        click.echo(f"   - {concern}")
             
         except Exception as e:
             click.echo(f"Security assessment failed: {e}", err=True)
@@ -347,9 +394,9 @@ def conf(ctx, filename):
         try:
             is_valid = config_loader.validate_config_file(filename)
             if is_valid:
-                click.echo(f"✅ Configuration file {filename} is valid")
+                click.echo(f"Configuration file {filename} is valid")
             else:
-                click.echo(f"❌ Configuration file {filename} is invalid")
+                click.echo(f"Configuration file {filename} is invalid")
                 sys.exit(1)
         except Exception as e:
             click.echo(f"Validation failed: {e}", err=True)
